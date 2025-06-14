@@ -10,7 +10,15 @@ CRITICAL RESPONSIBILITIES:
 - Create stateless FastAPI endpoints following API-first design
 - Implement proper Git workflow with feature branches
 - Ensure 100% test coverage and DNA compliance
+- Validate DNA principles in generated code (NEW FEATURE)
 - Maintain performance standards (Lighthouse >90, API <200ms)
+
+DNA COMPLIANCE VALIDATION (NEW):
+- Pedagogical Value: Comment quality, variable naming clarity
+- Simplicity First: Cyclomatic complexity measurement (<10 components, <8 APIs)
+- Professional Tone: Code comments and error messages validation
+- Policy to Practice: Municipal requirements and accessibility compliance
+- Time Respect: Optimized for 10-minute learning sessions
 
 CONTRACT PROTECTION:
 This agent receives contracts from Game Designer and outputs to Test Engineer.
@@ -104,8 +112,10 @@ class DeveloperAgent(BaseAgent):
         4. Create FastAPI endpoints following stateless design
         5. Implement state management and error handling
         6. Generate comprehensive unit tests
-        7. Create feature branch and commit implementation
-        8. Generate output contract for Test Engineer
+        7. Validate DNA compliance in generated code (NEW)
+        8. Validate implementation quality and performance
+        9. Create feature branch and commit implementation
+        10. Generate output contract for Test Engineer
         
         Args:
             input_contract: Contract from Game Designer with UX specs
@@ -163,14 +173,23 @@ class DeveloperAgent(BaseAgent):
                 story_id
             )
             
-            # Step 7: Validate implementation quality
+            # Step 7: Validate DNA compliance in generated code
+            self.logger.info("Validating DNA compliance in generated code")
+            await self._validate_code_dna_compliance(
+                component_implementations,
+                api_implementations,
+                test_suite,
+                game_mechanics
+            )
+            
+            # Step 8: Validate implementation quality
             await self._validate_implementation_quality(
                 component_implementations,
                 api_implementations,
                 test_suite
             )
             
-            # Step 8: Commit implementation to feature branch
+            # Step 9: Commit implementation to feature branch
             commit_message = f"Implement {story_id}: {game_mechanics.get('title', 'Feature implementation')}"
             commit_hash = await self.git_operations.commit_implementation(
                 story_id,
@@ -180,7 +199,7 @@ class DeveloperAgent(BaseAgent):
                 test_suite
             )
             
-            # Step 9: Generate implementation documentation
+            # Step 10: Generate implementation documentation
             implementation_docs = await self._generate_implementation_docs(
                 story_id,
                 game_mechanics,
@@ -189,7 +208,7 @@ class DeveloperAgent(BaseAgent):
                 test_suite
             )
             
-            # Step 10: Create output contract for Test Engineer
+            # Step 11: Create output contract for Test Engineer
             output_contract = await self._create_output_contract(
                 input_contract,
                 story_id,
@@ -269,6 +288,345 @@ class DeveloperAgent(BaseAgent):
                 raise QualityGateError(f"API {api['name']} response time: {response_time}ms (max: 200ms)")
         
         self.logger.info("All quality standards met")
+    
+    async def _validate_code_dna_compliance(
+        self,
+        component_implementations: List[Dict[str, Any]],
+        api_implementations: List[Dict[str, Any]],
+        test_suite: Dict[str, Any],
+        game_mechanics: Dict[str, Any]
+    ) -> None:
+        """
+        Validate that generated code complies with DigiNativa DNA principles.
+        
+        CRITICAL DNA VALIDATION:
+        - Pedagogical Value: Comment quality, variable naming clarity
+        - Simplicity First: Cyclomatic complexity measurement
+        - Professional Tone: Code comments and error messages
+        - Policy to Practice: Implementation follows municipal requirements
+        - Time Respect: Code optimized for 10-minute learning sessions
+        
+        Args:
+            component_implementations: Generated React components
+            api_implementations: Generated FastAPI endpoints
+            test_suite: Generated test suite
+            game_mechanics: Game mechanics context
+            
+        Raises:
+            DNAComplianceError: If code violates DNA principles
+        """
+        try:
+            self.logger.info("Validating DNA compliance in generated code")
+            
+            dna_violations = []
+            
+            # Validate Pedagogical Value in code
+            pedagogical_score = await self._validate_pedagogical_value_in_code(
+                component_implementations, api_implementations, game_mechanics
+            )
+            if pedagogical_score < 4.0:
+                dna_violations.append(f"Pedagogical value score too low: {pedagogical_score} (min: 4.0)")
+            
+            # Validate Simplicity First principle
+            complexity_violations = await self._validate_code_complexity(
+                component_implementations, api_implementations
+            )
+            if complexity_violations:
+                dna_violations.extend(complexity_violations)
+            
+            # Validate Professional Tone in code
+            tone_violations = await self._validate_professional_tone_in_code(
+                component_implementations, api_implementations
+            )
+            if tone_violations:
+                dna_violations.extend(tone_violations)
+            
+            # Validate Policy to Practice implementation
+            policy_violations = await self._validate_policy_implementation(
+                component_implementations, api_implementations, game_mechanics
+            )
+            if policy_violations:
+                dna_violations.extend(policy_violations)
+            
+            # Validate Time Respect in code design
+            time_violations = await self._validate_time_respect_in_code(
+                component_implementations, api_implementations
+            )
+            if time_violations:
+                dna_violations.extend(time_violations)
+            
+            if dna_violations:
+                error_msg = f"DNA compliance violations in generated code: {'; '.join(dna_violations)}"
+                self.logger.error(error_msg)
+                raise DNAComplianceError(error_msg)
+            
+            self.logger.info("DNA compliance validation passed for generated code")
+            
+        except Exception as e:
+            if isinstance(e, DNAComplianceError):
+                raise
+            error_msg = f"DNA compliance validation failed: {str(e)}"
+            self.logger.error(error_msg)
+            raise DNAComplianceError(error_msg)
+    
+    async def _validate_pedagogical_value_in_code(
+        self,
+        component_implementations: List[Dict[str, Any]],
+        api_implementations: List[Dict[str, Any]],
+        game_mechanics: Dict[str, Any]
+    ) -> float:
+        """
+        Validate pedagogical value is reflected in code quality.
+        
+        VALIDATION CRITERIA:
+        - Comment quality: Explain learning objectives
+        - Variable naming: Clear, educational naming conventions
+        - Code structure: Supports learning progression
+        - Documentation: Educational context provided
+        """
+        total_score = 0.0
+        total_items = 0
+        
+        # Validate component pedagogical value
+        for component in component_implementations:
+            score = 0.0
+            
+            # Check comment quality (0-5 scale)
+            component_code = component.get("code", {}).get("component", "")
+            if "learning" in component_code.lower() or "educational" in component_code.lower():
+                score += 1.5
+            if "/**" in component_code and "@param" in component_code:
+                score += 1.0  # Well-documented components
+            if len([line for line in component_code.split('\n') if line.strip().startswith('//')]) > 3:
+                score += 0.5  # Adequate inline comments
+            
+            # Check variable naming clarity (0-5 scale)
+            clear_naming_patterns = [
+                "learningProgress", "educationalContent", "municipalTask",
+                "userLearning", "trainingModule", "pedagogicalValue"
+            ]
+            if any(pattern in component_code for pattern in clear_naming_patterns):
+                score += 1.5
+            
+            # Check if component supports learning progression
+            if "step" in component_code.lower() or "progress" in component_code.lower():
+                score += 0.5
+            
+            total_score += min(score, 5.0)
+            total_items += 1
+        
+        # Validate API pedagogical value
+        for api in api_implementations:
+            score = 0.0
+            
+            # Check API documentation quality
+            api_code = api.get("code", {}).get("endpoint", "")
+            if "learning" in api_code.lower() or "training" in api_code.lower():
+                score += 1.5
+            if '"""' in api_code and ("Args:" in api_code and "Returns:" in api_code):
+                score += 1.0  # Well-documented APIs
+            
+            # Check error messages are educational
+            if "error_message" in api_code and "validation" in api_code:
+                score += 1.0
+            
+            total_score += min(score, 5.0)
+            total_items += 1
+        
+        return total_score / max(total_items, 1)
+    
+    async def _validate_code_complexity(
+        self,
+        component_implementations: List[Dict[str, Any]],
+        api_implementations: List[Dict[str, Any]]
+    ) -> List[str]:
+        """
+        Validate Simplicity First principle through cyclomatic complexity.
+        
+        COMPLEXITY LIMITS:
+        - Components: Max complexity 10 per function
+        - APIs: Max complexity 8 per function
+        - Overall: Prefer simple, readable solutions
+        """
+        violations = []
+        
+        # Check component complexity
+        for component in component_implementations:
+            component_code = component.get("code", {}).get("component", "")
+            complexity_score = self._calculate_cyclomatic_complexity(component_code)
+            
+            if complexity_score > 10:
+                violations.append(
+                    f"Component {component['name']} complexity too high: {complexity_score} (max: 10)"
+                )
+        
+        # Check API complexity
+        for api in api_implementations:
+            api_code = api.get("code", {}).get("endpoint", "")
+            complexity_score = self._calculate_cyclomatic_complexity(api_code)
+            
+            if complexity_score > 8:
+                violations.append(
+                    f"API {api['name']} complexity too high: {complexity_score} (max: 8)"
+                )
+        
+        return violations
+    
+    def _calculate_cyclomatic_complexity(self, code: str) -> int:
+        """
+        Calculate cyclomatic complexity of code.
+        
+        Simple implementation counting decision points:
+        - if, elif, else
+        - for, while
+        - try, catch, except
+        - &&, ||, and, or
+        - ? (ternary operator)
+        """
+        if not code:
+            return 1
+        
+        # Count decision points
+        decision_keywords = [
+            'if ', 'elif ', 'else:', 'for ', 'while ', 'try:', 'except:', 'catch',
+            '&&', '||', ' and ', ' or ', '?'
+        ]
+        
+        complexity = 1  # Base complexity
+        
+        for keyword in decision_keywords:
+            complexity += code.lower().count(keyword)
+        
+        # Additional complexity for nested structures
+        nesting_level = max(code.count('    ') // 4, code.count('\t'))
+        if nesting_level > 3:
+            complexity += nesting_level - 3
+        
+        return complexity
+    
+    async def _validate_professional_tone_in_code(
+        self,
+        component_implementations: List[Dict[str, Any]],
+        api_implementations: List[Dict[str, Any]]
+    ) -> List[str]:
+        """
+        Validate professional tone in code comments and error messages.
+        
+        PROFESSIONAL STANDARDS:
+        - Error messages: Clear, helpful, non-technical for end users
+        - Comments: Professional, municipal context appropriate
+        - Variable names: Professional Swedish municipal terminology
+        """
+        violations = []
+        
+        # Check component professional tone
+        for component in component_implementations:
+            component_code = component.get("code", {}).get("component", "")
+            
+            # Check for unprofessional comments
+            unprofessional_terms = ["TODO", "FIXME", "HACK", "dirty", "stupid", "wtf"]
+            for term in unprofessional_terms:
+                if term.lower() in component_code.lower():
+                    violations.append(f"Unprofessional term '{term}' in component {component['name']}")
+            
+            # Check error message quality
+            if "error" in component_code.lower():
+                if not any(word in component_code for word in ["validation", "please", "required"]):
+                    violations.append(f"Error messages in {component['name']} lack professional tone")
+        
+        # Check API professional tone
+        for api in api_implementations:
+            api_code = api.get("code", {}).get("endpoint", "")
+            
+            # Check API error messages are user-friendly
+            if "HTTPException" in api_code:
+                if "status_code=500" in api_code and "Internal server error" in api_code:
+                    # Good - generic error for users
+                    pass
+                elif "error_code" in api_code and "error_message" in api_code:
+                    # Good - structured error response
+                    pass
+                else:
+                    violations.append(f"API {api['name']} error handling lacks professional structure")
+        
+        return violations
+    
+    async def _validate_policy_implementation(
+        self,
+        component_implementations: List[Dict[str, Any]],
+        api_implementations: List[Dict[str, Any]],
+        game_mechanics: Dict[str, Any]
+    ) -> List[str]:
+        """
+        Validate Policy to Practice implementation in code.
+        
+        MUNICIPAL REQUIREMENTS:
+        - Accessibility compliance in components
+        - GDPR compliance in data handling
+        - Swedish language support
+        - Municipal user role considerations
+        """
+        violations = []
+        
+        # Check accessibility implementation
+        for component in component_implementations:
+            component_code = component.get("code", {}).get("component", "")
+            
+            # Check for accessibility attributes
+            if "form" in component_code.lower() or "input" in component_code.lower():
+                if not any(attr in component_code for attr in ["aria-", "role=", "tabIndex"]):
+                    violations.append(f"Component {component['name']} missing accessibility attributes")
+        
+        # Check GDPR compliance in APIs
+        for api in api_implementations:
+            api_code = api.get("code", {}).get("endpoint", "")
+            
+            # Check for personal data handling
+            if any(field in api_code.lower() for field in ["email", "name", "personal"]):
+                if "validation" not in api_code or "sanitiz" not in api_code:
+                    violations.append(f"API {api['name']} lacks GDPR-compliant data validation")
+        
+        return violations
+    
+    async def _validate_time_respect_in_code(
+        self,
+        component_implementations: List[Dict[str, Any]],
+        api_implementations: List[Dict[str, Any]]
+    ) -> List[str]:
+        """
+        Validate Time Respect principle in code design.
+        
+        TIME EFFICIENCY REQUIREMENTS:
+        - Components optimized for quick interactions
+        - APIs respond within 200ms budget
+        - Minimal cognitive load in UI components
+        - Progress indicators for longer operations
+        """
+        violations = []
+        
+        # Check component time efficiency
+        for component in component_implementations:
+            component_code = component.get("code", {}).get("component", "")
+            
+            # Check for loading states
+            if "fetch" in component_code or "api" in component_code:
+                if "loading" not in component_code.lower() and "spinner" not in component_code.lower():
+                    violations.append(f"Component {component['name']} missing loading indicators")
+            
+            # Check for progress indicators
+            if "form" in component_code.lower() and len(component_code) > 1000:
+                if "progress" not in component_code.lower() and "step" not in component_code.lower():
+                    violations.append(f"Complex form {component['name']} missing progress indicators")
+        
+        # Check API time efficiency
+        for api in api_implementations:
+            api_implementation = api.get("implementation", {})
+            estimated_time = api_implementation.get("estimated_response_time_ms", 0)
+            
+            if estimated_time > 200:
+                violations.append(f"API {api['name']} exceeds time budget: {estimated_time}ms (max: 200ms)")
+        
+        return violations
     
     async def _generate_implementation_docs(
         self,

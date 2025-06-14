@@ -41,6 +41,7 @@ from .tools.performance_tester import PerformanceTester
 from .tools.municipal_training_tester import MunicipalTrainingTester
 from .tools.exploratory_tester import ExploratoryTester
 from .tools.uat_orchestrator import UATOrchestrator
+from .tools.quality_intelligence_engine import QualityIntelligenceEngine
 
 
 # Setup logging for this module

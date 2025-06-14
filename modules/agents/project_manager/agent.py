@@ -34,6 +34,7 @@ from ...shared.exceptions import (
 from .tools.github_integration import GitHubIntegration
 from .tools.story_analyzer import StoryAnalyzer
 from .tools.dna_compliance_checker import DNAComplianceChecker
+from .tools.learning_engine import LearningEngine
 
 
 class ProjectManagerAgent(BaseAgent):
@@ -69,6 +70,7 @@ class ProjectManagerAgent(BaseAgent):
             self.github_integration = GitHubIntegration(config)
             self.story_analyzer = StoryAnalyzer(config)
             self.dna_compliance_checker = DNAComplianceChecker(config)
+            self.learning_engine = LearningEngine(config)
             
             self.logger.info("Project Manager Agent tools initialized successfully")
             
@@ -140,10 +142,22 @@ class ProjectManagerAgent(BaseAgent):
                 story_breakdown
             )
             
-            # Step 5: Estimate complexity and timeline
-            complexity_assessment = await self.story_analyzer.assess_complexity(
+            # Step 5: Estimate complexity and timeline (Enhanced with ML)
+            traditional_complexity = await self.story_analyzer.assess_complexity(
                 story_breakdown
             )
+            
+            # Step 5b: Get ML-enhanced complexity prediction
+            try:
+                ml_prediction = await self.learning_engine.predict_complexity_with_ml(
+                    story_breakdown, traditional_complexity
+                )
+                complexity_assessment = self._merge_complexity_predictions(
+                    traditional_complexity, ml_prediction
+                )
+            except Exception as e:
+                self.logger.warning(f"ML complexity prediction failed, using traditional: {e}")
+                complexity_assessment = traditional_complexity
             
             # Step 6: Create Game Designer handoff contract
             output_contract = self._create_game_designer_contract(
@@ -623,6 +637,59 @@ class ProjectManagerAgent(BaseAgent):
             self.logger.error(f"Technical feasibility gate check failed: {e}")
             return False
     
+    def _merge_complexity_predictions(
+        self,
+        traditional_complexity: Dict[str, Any],
+        ml_prediction
+    ) -> Dict[str, Any]:
+        """
+        Merge traditional complexity assessment with ML prediction.
+        
+        Args:
+            traditional_complexity: Traditional complexity assessment
+            ml_prediction: ML-based complexity prediction
+            
+        Returns:
+            Enhanced complexity assessment with ML insights
+        """
+        try:
+            # Start with traditional assessment
+            enhanced_complexity = traditional_complexity.copy()
+            
+            # Update with ML predictions if confidence is high enough
+            if ml_prediction.confidence_level > 0.6:
+                enhanced_complexity.update({
+                    'ml_predicted_hours': ml_prediction.predicted_hours,
+                    'ml_confidence_interval': ml_prediction.confidence_interval,
+                    'ml_confidence_level': ml_prediction.confidence_level,
+                    'ml_risk_factors': ml_prediction.risk_factors,
+                    'similar_projects': ml_prediction.similar_projects,
+                    'prediction_method': 'ml_enhanced'
+                })
+                
+                # Use ML prediction if significantly different and high confidence
+                if (ml_prediction.confidence_level > 0.8 and 
+                    abs(ml_prediction.predicted_hours - traditional_complexity.get('estimated_duration_hours', 8)) > 4):
+                    enhanced_complexity['estimated_duration_hours'] = ml_prediction.predicted_hours
+                    enhanced_complexity['estimation_notes'] = (
+                        f"ML prediction ({ml_prediction.predicted_hours:.1f}h) differs significantly from "
+                        f"traditional estimate ({traditional_complexity.get('estimated_duration_hours', 8)}h). "
+                        f"Using ML prediction with {ml_prediction.confidence_level:.0%} confidence based on "
+                        f"{len(ml_prediction.similar_projects)} similar projects."
+                    )
+            else:
+                enhanced_complexity.update({
+                    'prediction_method': 'traditional_with_ml_insight',
+                    'ml_confidence_low': True,
+                    'ml_insights': ml_prediction.risk_factors
+                })
+            
+            return enhanced_complexity
+            
+        except Exception as e:
+            self.logger.error(f"Failed to merge complexity predictions: {e}")
+            return traditional_complexity
+    
     # Public API methods for external integrations
     async def process_github_issue(self, issue_url: str) -> Dict[str, Any]:
         """
@@ -664,10 +731,79 @@ class ProjectManagerAgent(BaseAgent):
             "tools_status": {
                 "github_integration": "initialized" if hasattr(self, 'github_integration') else "error",
                 "story_analyzer": "initialized" if hasattr(self, 'story_analyzer') else "error",
-                "dna_compliance_checker": "initialized" if hasattr(self, 'dna_compliance_checker') else "error"
+                "dna_compliance_checker": "initialized" if hasattr(self, 'dna_compliance_checker') else "error",
+                "learning_engine": "initialized" if hasattr(self, 'learning_engine') else "error"
             },
             "configuration": {
                 "max_concurrent_stories": self.max_concurrent_stories,
                 "story_priority_threshold": self.story_priority_threshold
             }
         }
+    
+    async def learn_from_project_completion(
+        self,
+        story_id: str,
+        original_story_data: Dict[str, Any],
+        actual_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Learn from completed project to improve future predictions.
+        
+        This method enables the Learning Engine to continuously improve
+        by analyzing the difference between predictions and actual results.
+        
+        Args:
+            story_id: Completed story identifier
+            original_story_data: Original story breakdown and estimates
+            actual_results: Actual completion metrics and results
+            
+        Returns:
+            Learning summary and insights
+        """
+        try:
+            self.logger.info(f"Learning from completed project: {story_id}")
+            
+            # Use Learning Engine to process completion data
+            await self.learning_engine.learn_from_completion(
+                story_id, original_story_data, actual_results
+            )
+            
+            # Get updated learning insights
+            learning_insights = await self.learning_engine.get_learning_insights()
+            
+            # Log key improvements
+            if 'recommendations' in learning_insights:
+                for recommendation in learning_insights['recommendations'][:3]:
+                    self.logger.info(f"Learning recommendation: {recommendation}")
+            
+            return {
+                'status': 'learning_completed',
+                'story_id': story_id,
+                'learning_insights': learning_insights,
+                'improvement_areas': learning_insights.get('next_improvement_opportunities', [])
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to learn from project completion {story_id}: {e}")
+            return {
+                'status': 'learning_failed',
+                'story_id': story_id,
+                'error': str(e)
+            }
+    
+    async def get_learning_status(self) -> Dict[str, Any]:
+        """
+        Get current learning status and insights.
+        
+        Returns:
+            Learning engine status and insights
+        """
+        try:
+            if hasattr(self, 'learning_engine'):
+                return await self.learning_engine.get_learning_insights()
+            else:
+                return {'status': 'learning_engine_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to get learning status: {e}")
+            return {'status': 'error', 'message': str(e)}

@@ -169,3 +169,186 @@ class TestDeveloperAgent:
         }
         
         assert not developer_agent._validate_dna_compliance(invalid_contract)
+    
+    @pytest.mark.asyncio
+    async def test_code_dna_compliance_validation(self, developer_agent):
+        """Test the new DNA compliance validation in generated code."""
+        
+        # Test data with good DNA compliance
+        good_component_implementations = [
+            {
+                "name": "LearningProgressComponent",
+                "code": {
+                    "component": '''
+                    /**
+                     * LearningProgressComponent - Helps municipal workers track their learning progress
+                     * 
+                     * @param props.learningProgress - Current learning progress data
+                     * @returns JSX.Element
+                     */
+                    export const LearningProgressComponent: React.FC<LearningProgressProps> = (props) => {
+                        // Show step-by-step progress for municipal training
+                        const [municipalTaskProgress, setMunicipalTaskProgress] = useState(0);
+                        
+                        return (
+                            <Card role="region" aria-label="Learning Progress">
+                                <Progress value={props.learningProgress} />
+                                {/* Clear progress indicators for 10-minute sessions */}
+                                <span>Step {municipalTaskProgress + 1} of 5</span>
+                            </Card>
+                        );
+                    };
+                    '''
+                }
+            }
+        ]
+        
+        good_api_implementations = [
+            {
+                "name": "training_progress",
+                "code": {
+                    "endpoint": '''
+                    @router.post("/training-progress")
+                    async def training_progress(request: TrainingProgressRequest) -> TrainingProgressResponse:
+                        """
+                        Track municipal employee learning progress.
+                        
+                        Args:
+                            request: Training progress data with validation
+                            
+                        Returns:
+                            TrainingProgressResponse: Updated progress information
+                        """
+                        try:
+                            # Validate and sanitize personal data (GDPR compliance)
+                            validated_data = validate_personal_data(request)
+                            
+                            # Process learning progress
+                            result = await process_training_progress(validated_data)
+                            
+                            return TrainingProgressResponse(
+                                success=True,
+                                data=result,
+                                message="Learning progress updated successfully"
+                            )
+                        except ValidationError as e:
+                            raise HTTPException(
+                                status_code=422,
+                                detail={"error_code": "VALIDATION_ERROR", "error_message": "Please provide valid training data"}
+                            )
+                    '''
+                },
+                "implementation": {
+                    "estimated_response_time_ms": 150
+                }
+            }
+        ]
+        
+        test_suite = {"unit_tests": []}
+        game_mechanics = {"title": "Municipal Training Progress"}
+        
+        # Should pass validation
+        await developer_agent._validate_code_dna_compliance(
+            good_component_implementations,
+            good_api_implementations,
+            test_suite,
+            game_mechanics
+        )
+        
+        # Test data with DNA violations
+        bad_component_implementations = [
+            {
+                "name": "BadComponent",
+                "code": {
+                    "component": '''
+                    // TODO: Fix this later, this is a hack
+                    const BadComponent = (props) => {
+                        const x = props.data; // Poor naming
+                        if (x) {
+                            if (x.type) {
+                                if (x.type === 'complex') {
+                                    if (x.nested) {
+                                        if (x.nested.deep) {
+                                            if (x.nested.deep.value) {
+                                                // Way too complex!
+                                                return <div>Complex stuff</div>;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return <div>Error occurred</div>; // No accessibility
+                    };
+                    '''
+                }
+            }
+        ]
+        
+        bad_api_implementations = [
+            {
+                "name": "bad_api",
+                "code": {
+                    "endpoint": '''
+                    @router.post("/bad")
+                    async def bad_api(request):
+                        # No documentation, no error handling
+                        result = process_data(request)
+                        return result
+                    '''
+                },
+                "implementation": {
+                    "estimated_response_time_ms": 500  # Too slow
+                }
+            }
+        ]
+        
+        # Should raise DNAComplianceError
+        with pytest.raises(DNAComplianceError):
+            await developer_agent._validate_code_dna_compliance(
+                bad_component_implementations,
+                bad_api_implementations,
+                test_suite,
+                game_mechanics
+            )
+    
+    def test_cyclomatic_complexity_calculation(self, developer_agent):
+        """Test cyclomatic complexity calculation."""
+        
+        # Simple code (complexity = 1)
+        simple_code = '''
+        function simple() {
+            return "hello";
+        }
+        '''
+        assert developer_agent._calculate_cyclomatic_complexity(simple_code) == 1
+        
+        # Complex code (complexity > 10)
+        complex_code = '''
+        function complex(a, b, c) {
+            if (a) {
+                if (b) {
+                    for (let i = 0; i < 10; i++) {
+                        if (c && a || b) {
+                            try {
+                                while (true) {
+                                    if (i % 2) {
+                                        return i;
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                            } catch (e) {
+                                if (e.type) {
+                                    throw e;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        '''
+        complexity = developer_agent._calculate_cyclomatic_complexity(complex_code)
+        assert complexity > 10  # Should be flagged as too complex

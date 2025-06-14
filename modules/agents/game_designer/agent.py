@@ -35,6 +35,7 @@ from .tools.component_mapper import ComponentMapper
 from .tools.wireframe_generator import WireframeGenerator
 from .tools.ux_validator import UXValidator
 from .tools.pedagogical_design_helper import PedagogicalDesignHelper
+from .tools.dna_ux_validator import DNAUXValidator
 
 
 class GameDesignerAgent(BaseAgent):
@@ -62,8 +63,9 @@ class GameDesignerAgent(BaseAgent):
             self.wireframe_generator = WireframeGenerator()
             self.ux_validator = UXValidator()
             self.pedagogical_helper = PedagogicalDesignHelper()
+            self.dna_ux_validator = DNAUXValidator(config=self.config.get("dna_config", {}))
             
-            self.logger.info("Game Designer agent tools initialized successfully")
+            self.logger.info("Game Designer agent tools (including DNA UX validator) initialized successfully")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize Game Designer tools: {e}")
@@ -119,7 +121,7 @@ class GameDesignerAgent(BaseAgent):
                 interaction_flows
             )
             
-            # Step 5: Validate UX design against DNA principles
+            # Step 5: Validate UX design against DNA principles (original validation)
             self.logger.debug("Validating UX design against DNA principles")
             ux_validation = await self.ux_validator.validate_design(
                 game_mechanics,
@@ -128,10 +130,35 @@ class GameDesignerAgent(BaseAgent):
                 story_data.get("user_persona", "Anna")
             )
             
+            # Step 5b: Enhanced DNA UX validation (NEW)
+            self.logger.debug("Performing enhanced DNA UX validation")
+            dna_ux_validation = await self.dna_ux_validator.validate_ux_dna_compliance(
+                game_mechanics,
+                ui_components,
+                interaction_flows,
+                story_data
+            )
+            
+            # Check both validations
             if not ux_validation["valid"]:
                 raise DNAComplianceError(
                     f"UX design violates DNA principles: {ux_validation['violations']}",
                     violated_principles=ux_validation["violations"],
+                    agent_type=self.agent_type
+                )
+            
+            if not dna_ux_validation.overall_dna_compliant:
+                violations = []
+                if not dna_ux_validation.time_respect_compliant:
+                    violations.extend(dna_ux_validation.ui_complexity_result.complexity_violations)
+                if not dna_ux_validation.pedagogical_value_compliant:
+                    violations.extend(dna_ux_validation.learning_flow_result.learning_violations)
+                if not dna_ux_validation.professional_tone_compliant:
+                    violations.extend(dna_ux_validation.professional_tone_result.tone_violations)
+                
+                raise DNAComplianceError(
+                    f"Enhanced DNA UX validation failed (score: {dna_ux_validation.dna_compliance_score:.2f}/5.0): {violations}",
+                    violated_principles=violations,
                     agent_type=self.agent_type
                 )
             
@@ -150,7 +177,8 @@ class GameDesignerAgent(BaseAgent):
                 interaction_flows,
                 wireframes,
                 asset_requirements,
-                ux_validation
+                ux_validation,
+                dna_ux_validation
             )
             
             # Step 8: Save design documentation
@@ -262,7 +290,8 @@ class GameDesignerAgent(BaseAgent):
                                  interaction_flows: List[Dict[str, Any]],
                                  wireframes: Dict[str, Any],
                                  asset_requirements: List[Dict[str, Any]],
-                                 ux_validation: Dict[str, Any]) -> Dict[str, Any]:
+                                 ux_validation: Dict[str, Any],
+                                 dna_ux_validation) -> Dict[str, Any]:
         """Create contract for Developer agent handoff."""
         
         return {
@@ -272,17 +301,25 @@ class GameDesignerAgent(BaseAgent):
             "target_agent": "developer",
             "dna_compliance": {
                 "design_principles_validation": {
-                    "pedagogical_value": True,
-                    "policy_to_practice": True,
-                    "time_respect": True,
-                    "holistic_thinking": True,
-                    "professional_tone": True
+                    "pedagogical_value": dna_ux_validation.pedagogical_value_compliant,
+                    "policy_to_practice": True,  # Maintained from inherited PM validation
+                    "time_respect": dna_ux_validation.time_respect_compliant,
+                    "holistic_thinking": True,  # Maintained from inherited PM validation
+                    "professional_tone": dna_ux_validation.professional_tone_compliant
                 },
                 "architecture_compliance": {
                     "api_first": True,
                     "stateless_backend": True,
                     "separation_of_concerns": True,
                     "simplicity_first": True
+                },
+                "enhanced_dna_validation": {
+                    "overall_dna_compliant": dna_ux_validation.overall_dna_compliant,
+                    "dna_compliance_score": dna_ux_validation.dna_compliance_score,
+                    "ui_complexity_level": dna_ux_validation.ui_complexity_result.complexity_level.value,
+                    "learning_flow_quality": dna_ux_validation.learning_flow_result.flow_quality.value,
+                    "professional_tone_consistency": dna_ux_validation.professional_tone_result.tone_consistency.value,
+                    "validation_timestamp": dna_ux_validation.validation_timestamp
                 }
             },
             "input_requirements": {
