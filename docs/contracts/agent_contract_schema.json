@@ -119,6 +119,51 @@
             }
           },
           "additionalProperties": false
+        },
+        "enhanced_dna_validation": {
+          "type": "object",
+          "description": "Enhanced DNA validation results with detailed metrics and analysis",
+          "properties": {
+            "overall_dna_compliant": {
+              "type": "boolean",
+              "description": "Overall DNA compliance status"
+            },
+            "dna_compliance_score": {
+              "type": "number",
+              "minimum": 1.0,
+              "maximum": 5.0,
+              "description": "DNA compliance score (1-5 scale)"
+            },
+            "ui_complexity_level": {
+              "type": "string",
+              "enum": ["minimal", "low", "moderate", "high", "excessive"],
+              "description": "UI complexity level for time respect validation"
+            },
+            "learning_flow_quality": {
+              "type": "string", 
+              "enum": ["excellent", "good", "acceptable", "poor", "inadequate"],
+              "description": "Learning flow quality for pedagogical value validation"
+            },
+            "professional_tone_consistency": {
+              "type": "string",
+              "enum": ["excellent", "good", "acceptable", "inconsistent", "unprofessional"],
+              "description": "Professional tone consistency for municipal context"
+            },
+            "validation_timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp of enhanced DNA validation"
+            }
+          },
+          "required": [
+            "overall_dna_compliant",
+            "dna_compliance_score", 
+            "ui_complexity_level",
+            "learning_flow_quality",
+            "professional_tone_consistency",
+            "validation_timestamp"
+          ],
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
