@@ -1,0 +1,222 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Agent Contract Schema",
+  "description": "JSON Schema for validating contracts between AI agents in the DigiNativa system",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "story_id",
+    "source_agent",
+    "target_agent",
+    "dna_compliance",
+    "input_requirements",
+    "output_specifications",
+    "quality_gates",
+    "handoff_criteria"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Version of the contract format being used"
+    },
+    "contract_type": {
+      "type": "string",
+      "description": "Optional descriptive type of the contract"
+    },
+    "story_id": {
+      "type": "string",
+      "pattern": "^STORY-[A-Za-z0-9-]+-\\d+$",
+      "description": "Unique identifier for the story in format STORY-{feature_id}-{increment}"
+    },
+    "source_agent": {
+      "type": "string",
+      "enum": [
+        "github",
+        "project_manager",
+        "game_designer", 
+        "developer",
+        "test_engineer",
+        "qa_tester",
+        "quality_reviewer"
+      ],
+      "description": "Agent that is sending/creating this contract"
+    },
+    "target_agent": {
+      "type": "string",
+      "enum": [
+        "project_manager",
+        "game_designer",
+        "developer", 
+        "test_engineer",
+        "qa_tester",
+        "quality_reviewer"
+      ],
+      "description": "Agent that should receive and process this contract"
+    },
+    "dna_compliance": {
+      "type": "object",
+      "required": ["design_principles_validation", "architecture_compliance"],
+      "properties": {
+        "design_principles_validation": {
+          "type": "object",
+          "required": [
+            "pedagogical_value",
+            "policy_to_practice", 
+            "time_respect",
+            "holistic_thinking",
+            "professional_tone"
+          ],
+          "properties": {
+            "pedagogical_value": {
+              "type": "boolean",
+              "description": "Validates educational/learning focus"
+            },
+            "policy_to_practice": {
+              "type": "boolean", 
+              "description": "Connects policy to practical application"
+            },
+            "time_respect": {
+              "type": "boolean",
+              "description": "Respects user's time (≤10 minutes per feature)"
+            },
+            "holistic_thinking": {
+              "type": "boolean",
+              "description": "Considers full context and implications"
+            },
+            "professional_tone": {
+              "type": "boolean",
+              "description": "Appropriate for public sector professionals"
+            }
+          },
+          "additionalProperties": false
+        },
+        "architecture_compliance": {
+          "type": "object",
+          "required": [
+            "api_first",
+            "stateless_backend",
+            "separation_of_concerns", 
+            "simplicity_first"
+          ],
+          "properties": {
+            "api_first": {
+              "type": "boolean",
+              "description": "All communication via REST APIs"
+            },
+            "stateless_backend": {
+              "type": "boolean",
+              "description": "No server-side sessions, all state from client"
+            },
+            "separation_of_concerns": {
+              "type": "boolean",
+              "description": "Frontend and backend completely separate"
+            },
+            "simplicity_first": {
+              "type": "boolean", 
+              "description": "Choose simplest solution that works"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "input_requirements": {
+      "type": "object",
+      "required": ["required_files", "required_data", "required_validations"],
+      "properties": {
+        "required_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of files that must be provided as input"
+        },
+        "required_data": {
+          "type": "object",
+          "description": "Data structure that must be provided as input"
+        },
+        "required_validations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of validations that must be completed before processing"
+        }
+      },
+      "additionalProperties": false
+    },
+    "output_specifications": {
+      "type": "object",
+      "required": ["deliverable_files", "deliverable_data", "validation_criteria"],
+      "properties": {
+        "deliverable_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of files that will be delivered as output"
+        },
+        "deliverable_data": {
+          "type": "object",
+          "description": "Data structure that will be delivered as output"
+        },
+        "validation_criteria": {
+          "type": "object",
+          "properties": {
+            "design_principles": {
+              "type": "object",
+              "description": "Structured validation criteria for design principles"
+            },
+            "code_quality": {
+              "type": "object",
+              "description": "Structured validation criteria for code quality"
+            },
+            "performance": {
+              "type": "object", 
+              "description": "Structured validation criteria for performance"
+            },
+            "architecture": {
+              "type": "object",
+              "description": "Structured validation criteria for architecture"
+            },
+            "test_quality": {
+              "type": "object",
+              "description": "Structured validation criteria for test quality"
+            },
+            "user_experience": {
+              "type": "object",
+              "description": "Structured validation criteria for user experience"
+            },
+            "accessibility": {
+              "type": "object",
+              "description": "Structured validation criteria for accessibility"
+            },
+            "automation": {
+              "type": "object",
+              "description": "Structured validation criteria for automation"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "quality_gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of quality gates that must pass before handoff"
+    },
+    "handoff_criteria": {
+      "type": "array", 
+      "items": {
+        "type": "string"
+      },
+      "description": "Specific conditions that must be met for successful handoff"
+    }
+  },
+  "additionalProperties": false
+}
