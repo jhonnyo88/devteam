@@ -1,0 +1,49 @@
+{
+  "story_id": "STORY-TEST-001",
+  "wireframes": {
+    "layout_wireframes": {
+      "type": "responsive_grid"
+    },
+    "interaction_wireframes": {
+      "patterns": []
+    },
+    "responsive_wireframes": {
+      "breakpoints": [
+        "sm",
+        "md",
+        "lg"
+      ]
+    },
+    "accessibility_wireframes": {
+      "focus_order": []
+    }
+  },
+  "interaction_flows": [
+    {
+      "name": "main_flow",
+      "description": "Primary user interaction flow",
+      "start_state": "initial",
+      "end_state": "completed",
+      "user_actions": [
+        {
+          "step": "start",
+          "action_type": "view",
+          "components": [
+            "main_container",
+            "input_field"
+          ],
+          "expected_duration_seconds": 5
+        }
+      ],
+      "system_responses": [
+        {
+          "step": "display",
+          "response_type": "visual_feedback",
+          "feedback": "Interface displayed",
+          "next_step": "interaction"
+        }
+      ]
+    }
+  ],
+  "generated_at": "2025-06-14T19:27:38.869630"
+}

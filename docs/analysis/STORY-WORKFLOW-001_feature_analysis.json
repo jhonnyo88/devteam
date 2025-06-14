@@ -1,0 +1,67 @@
+{
+  "story_id": "STORY-WORKFLOW-001",
+  "feature_data": {
+    "feature_description": "Interactive Policy Quiz - Professional Development Feature\n\nCreate a comprehensive and efficient interactive quiz system that helps municipal employees bridge policy theory to workplace practice. This educational feature enables participants to quickly learn, apply, and demonstrate understanding of new organizational policies through immediate feedback and practical scenarios. The system connects theoretical policy knowledge with real-world implementation, ensuring professional development that respects busy work schedules with focused 10-minute learning sessions.",
+    "acceptance_criteria": [
+      "User can start a quiz on policy topics within 30 seconds",
+      "Quiz presents multiple choice questions with practical workplace scenarios",
+      "User receives immediate educational feedback on answers",
+      "Quiz tracks completion progress and demonstrates learning outcomes",
+      "User gets comprehensive summary score showing policy understanding"
+    ],
+    "user_persona": "Anna",
+    "priority_level": "high",
+    "time_constraint_minutes": 10,
+    "learning_objectives": [
+      "Understand key policy requirements and regulations",
+      "Apply policy knowledge to real workplace scenarios and practice",
+      "Demonstrate professional mastery of important policy information"
+    ],
+    "gdd_section_reference": "",
+    "github_issue_url": "",
+    "requested_by": "unknown",
+    "created_at": "2025-06-14T19:32:11.255466"
+  },
+  "acceptance_criteria": [
+    "User can start a quiz on policy topics within 30 seconds",
+    "Quiz presents multiple choice questions with practical workplace scenarios",
+    "User receives immediate educational feedback on answers",
+    "Quiz tracks completion progress and demonstrates learning outcomes",
+    "User gets comprehensive summary score showing policy understanding",
+    "User can use this feature as expected",
+    "Feature maintains pedagogical value",
+    "Feature respects 10-minute time constraint",
+    "Feature uses professional tone appropriate for Anna persona",
+    "All API endpoints respond within 200ms",
+    "Frontend components are accessible (WCAG AA)",
+    "Feature works on mobile devices",
+    "Code coverage is above 90%",
+    "No critical security vulnerabilities",
+    "Performance score above 90"
+  ],
+  "complexity_assessment": {
+    "overall_complexity": "Very Complex",
+    "effort_points": 10,
+    "technical_complexity": "Medium",
+    "design_complexity": "High",
+    "integration_complexity": "Low",
+    "testing_complexity": "Low",
+    "estimated_duration_hours": 64.0,
+    "estimated_duration_days": 8.0,
+    "risk_factors": [
+      "Technical complexity",
+      "Timeline constraints"
+    ],
+    "confidence_level": 0.7000000000000001,
+    "implementation_notes": "Implementation involves medium technical complexity and high design complexity.",
+    "complexity_breakdown": {
+      "frontend_work": 3,
+      "backend_work": 2,
+      "testing_work": 2,
+      "integration_work": 1
+    },
+    "assessment_timestamp": "2025-06-14T19:32:11.256693"
+  },
+  "created_at": "2025-06-14T19:32:11.257607",
+  "created_by": "pm-001"
+}

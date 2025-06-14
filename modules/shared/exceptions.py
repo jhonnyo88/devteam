@@ -269,6 +269,69 @@ class SecurityError(DigiNativaError):
         return result
 
 
+class EventBusError(DigiNativaError):
+    """
+    Raised when EventBus operations fail.
+    
+    EventBus errors indicate issues with agent coordination,
+    work delegation, or workflow management.
+    """
+    
+    def __init__(self, message: str, operation: Optional[str] = None, 
+                 affected_agents: Optional[List[str]] = None):
+        super().__init__(message)
+        self.operation = operation  # 'register', 'delegate', 'queue', etc.
+        self.affected_agents = affected_agents or []
+    
+    def to_dict(self) -> Dict[str, Any]:
+        result = super().to_dict()
+        result["operation"] = self.operation
+        result["affected_agents"] = self.affected_agents
+        return result
+
+
+class WorkflowError(DigiNativaError):
+    """
+    Raised when workflow sequence or logic violations occur.
+    
+    Workflow errors indicate violations of agent sequencing
+    or workflow state management issues.
+    """
+    
+    def __init__(self, message: str, workflow_step: str, 
+                 expected_sequence: Optional[List[str]] = None):
+        super().__init__(message)
+        self.workflow_step = workflow_step
+        self.expected_sequence = expected_sequence or []
+    
+    def to_dict(self) -> Dict[str, Any]:
+        result = super().to_dict()
+        result["workflow_step"] = self.workflow_step
+        result["expected_sequence"] = self.expected_sequence
+        return result
+
+
+class QueueManagementError(DigiNativaError):
+    """
+    Raised when work queue management operations fail.
+    
+    Queue management errors indicate issues with work
+    prioritization, queueing, or processing.
+    """
+    
+    def __init__(self, message: str, queue_operation: str, 
+                 queue_size: Optional[int] = None):
+        super().__init__(message)
+        self.queue_operation = queue_operation  # 'enqueue', 'dequeue', 'prioritize', etc.
+        self.queue_size = queue_size
+    
+    def to_dict(self) -> Dict[str, Any]:
+        result = super().to_dict()
+        result["queue_operation"] = self.queue_operation
+        result["queue_size"] = self.queue_size
+        return result
+
+
 # Utility functions for error handling
 
 def format_error_for_logging(error: Exception) -> Dict[str, Any]:

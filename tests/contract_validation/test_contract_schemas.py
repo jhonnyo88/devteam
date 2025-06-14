@@ -61,7 +61,7 @@ class TestContractSchema:
         }
         expected_target = {
             "project_manager", "game_designer", "developer", 
-            "test_engineer", "qa_tester", "quality_reviewer"  
+            "test_engineer", "qa_tester", "quality_reviewer", "deployment"
         }
         
         assert source_agents == expected_source

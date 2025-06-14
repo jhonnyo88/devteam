@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# Pre-commit hook for DigiNativa AI Team
+#
+# PURPOSE:
+# Automatically validate agent contracts before any commit to ensure
+# team integration remains intact when agents are modified.
+#
+# CRITICAL VALIDATION:
+# - Agent contract compatibility
+# - DNA compliance preservation
+# - Performance requirements
+# - Security requirements
+# - Quality gates validation
+
+set -e
+
+echo "🔄 DigiNativa Pre-commit Contract Validation"
+echo "🎯 Ensuring AI team integration remains intact..."
+echo
+
+# Get the project root directory
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_ROOT"
+
+# Check if contract validation script exists
+VALIDATION_SCRIPT="scripts/validate_contracts.py"
+if [ ! -f "$VALIDATION_SCRIPT" ]; then
+    echo "❌ Contract validation script not found: $VALIDATION_SCRIPT"
+    echo "Please ensure the script exists before committing."
+    exit 1
+fi
+
+# Run contract validation
+echo "Running contract validation..."
+if python3 "$VALIDATION_SCRIPT" --fast; then
+    echo "✅ Contract validation passed!"
+    echo "🎉 Safe to commit - team integration is intact!"
+else
+    exit_code=$?
+    echo
+    echo "❌ Contract validation failed!"
+    echo "🚨 COMMIT BLOCKED - Agent contract compatibility issues detected!"
+    echo
+    echo "Please fix the contract issues before committing:"
+    echo "1. Review the validation errors above"
+    echo "2. Fix any contract compatibility issues"
+    echo "3. Run 'python3 scripts/validate_contracts.py' to verify fixes"
+    echo "4. Try committing again"
+    echo
+    echo "For detailed output, run: python3 scripts/validate_contracts.py --verbose"
+    exit $exit_code
+fi

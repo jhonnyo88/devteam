@@ -25,8 +25,9 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from modules.shared.base_agent import BaseAgent, AgentExecutionResult, AgentState
+from modules.shared.contract_validator import ContractValidationError
 from modules.shared.exceptions import (
-    ContractValidationError, DNAComplianceError, QualityGateError,
+    DNAComplianceError, QualityGateError,
     AgentExecutionError, StateManagementError
 )
 

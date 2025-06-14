@@ -400,8 +400,8 @@ class TestProjectManagerAgent:
             }
         }
         
-        mock_pm_agent.github_integration.fetch_issue_data.return_value = mock_issue_data
-        mock_pm_agent.github_integration.convert_issue_to_contract.return_value = mock_contract
+        mock_pm_agent.github_integration.fetch_issue_data = AsyncMock(return_value=mock_issue_data)
+        mock_pm_agent.github_integration.convert_issue_to_contract = AsyncMock(return_value=mock_contract)
         
         # Mock execute_work to return success
         mock_result = Mock()

@@ -1,0 +1,342 @@
+{
+  "story_id": null,
+  "wcag_level": "AA",
+  "validation_timestamp": "2025-06-14T20:26:17.646284",
+  "compliance_summary": {
+    "overall_score": 99.3,
+    "compliance_level": "AA",
+    "compliance_percentage": 96.6,
+    "total_tests": 29,
+    "tests_passed": 28,
+    "tests_failed": 1,
+    "meets_threshold": true
+  },
+  "test_results": [
+    {
+      "test_name": "WCAG 1.1.1: Non-text Content",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "1.1.1",
+        "wcag_level": "A",
+        "description": "All non-text content has text alternatives",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 1.3.1: Info and Relationships",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "1.3.1",
+        "wcag_level": "A",
+        "description": "Information structure can be programmatically determined",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 1.3.2: Meaningful Sequence",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "1.3.2",
+        "wcag_level": "A",
+        "description": "Content order makes sense when presented sequentially",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 1.4.1: Use of Color",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "1.4.1",
+        "wcag_level": "A",
+        "description": "Color is not the only means of conveying information",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 1.4.3: Contrast (Minimum)",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "1.4.3",
+        "wcag_level": "AA",
+        "description": "Text has contrast ratio of at least 4.5:1",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 1.4.4: Resize text",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "1.4.4",
+        "wcag_level": "AA",
+        "description": "Text can be resized up to 200% without loss of functionality",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 1.4.5: Images of Text",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "1.4.5",
+        "wcag_level": "AA",
+        "description": "Text is used rather than images of text",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.1.1: Keyboard",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.1.1",
+        "wcag_level": "A",
+        "description": "All functionality available via keyboard",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.1.2: No Keyboard Trap",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.1.2",
+        "wcag_level": "A",
+        "description": "Keyboard focus is not trapped",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.4.1: Bypass Blocks",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.4.1",
+        "wcag_level": "A",
+        "description": "Skip links or other bypass mechanisms provided",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.4.2: Page Titled",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.4.2",
+        "wcag_level": "A",
+        "description": "Pages have descriptive titles",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.4.3: Focus Order",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.4.3",
+        "wcag_level": "A",
+        "description": "Focus order preserves meaning and operability",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.4.4: Link Purpose (In Context)",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.4.4",
+        "wcag_level": "A",
+        "description": "Link purpose can be determined from link text or context",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.4.6: Headings and Labels",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.4.6",
+        "wcag_level": "AA",
+        "description": "Headings and labels describe topic or purpose",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 2.4.7: Focus Visible",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "2.4.7",
+        "wcag_level": "AA",
+        "description": "Keyboard focus indicator is visible",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 3.1.1: Language of Page",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "3.1.1",
+        "wcag_level": "A",
+        "description": "Primary language of page can be programmatically determined",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 3.1.2: Language of Parts",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "3.1.2",
+        "wcag_level": "AA",
+        "description": "Language of parts can be programmatically determined",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 3.2.3: Consistent Navigation",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "3.2.3",
+        "wcag_level": "AA",
+        "description": "Navigation is consistent across pages",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 3.2.4: Consistent Identification",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "3.2.4",
+        "wcag_level": "AA",
+        "description": "Components with same functionality identified consistently",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 3.3.1: Error Identification",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "3.3.1",
+        "wcag_level": "A",
+        "description": "Errors are identified and described to users",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 3.3.2: Labels or Instructions",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "3.3.2",
+        "wcag_level": "A",
+        "description": "Labels or instructions provided for user input",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 4.1.1: Parsing",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "4.1.1",
+        "wcag_level": "A",
+        "description": "Valid HTML markup",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "WCAG 4.1.2: Name, Role, Value",
+      "passed": true,
+      "score": 100.0,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "criterion_id": "4.1.2",
+        "wcag_level": "A",
+        "description": "UI components have accessible name, role, and value",
+        "automated": true
+      }
+    },
+    {
+      "test_name": "Color Contrast Validation",
+      "passed": true,
+      "score": 100,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "elements_tested": 0,
+        "contrast_violations": 0,
+        "minimum_required_contrast": 4.5
+      }
+    },
+    {
+      "test_name": "Keyboard Navigation Testing",
+      "passed": true,
+      "score": 100,
+      "violations": [],
+      "recommendations": [],
+      "details": {
+        "interactive_elements_tested": 0,
+        "keyboard_violations": 0
+      }
+    },
+    {
+      "test_name": "Screen Reader Compatibility",
+      "passed": false,
+      "score": 80,
+      "violations": [
+        

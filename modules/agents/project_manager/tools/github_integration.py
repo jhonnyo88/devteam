@@ -653,6 +653,171 @@ class GitHubIntegration:
             self.logger.error(f"Failed to add label to issue #{issue_number}: {e}")
             return False
     
+    async def create_approval_request_issue(
+        self,
+        story_id: str,
+        feature_data: Dict[str, Any],
+        quality_metrics: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Create GitHub issue for project owner approval.
+        
+        Args:
+            story_id: Story ID of the completed feature
+            feature_data: Feature information and requirements
+            quality_metrics: Quality analysis results
+            
+        Returns:
+            Created issue data
+        """
+        try:
+            # Generate approval request body
+            approval_body = self._generate_approval_request_body(
+                story_id, feature_data, quality_metrics
+            )
+            
+            # Create issue data
+            issue_data = {
+                "title": f"[APPROVAL] {feature_data.get('feature_title', 'Feature')} - {story_id}",
+                "body": approval_body,
+                "labels": ["feature-approval", "awaiting-decision", f"story-{story_id}"],
+                "assignees": [self._get_project_owner()]
+            }
+            
+            # Create the issue
+            url = f"{self.base_url}/repos/{self.repo_owner}/{self.repo_name}/issues"
+            response = await self._make_github_request("POST", url, data=issue_data)
+            
+            created_issue = response.json()
+            self.logger.info(f"Created approval request issue #{created_issue['number']} for {story_id}")
+            
+            return created_issue
+            
+        except Exception as e:
+            raise ExternalServiceError(
+                f"Failed to create approval request issue for {story_id}: {e}",
+                service_name="GitHub"
+            )
+    
+    async def fetch_approval_decisions(self) -> List[Dict[str, Any]]:
+        """
+        Fetch approval decisions from GitHub issues.
+        
+        Returns:
+            List of approval decision issues
+        """
+        try:
+            url = f"{self.base_url}/repos/{self.repo_owner}/{self.repo_name}/issues"
+            params = {
+                "labels": "feature-approval",
+                "state": "open",
+                "sort": "updated",
+                "direction": "desc",
+                "per_page": 20
+            }
+            
+            response = await self._make_github_request("GET", url, params=params)
+            issues = response.json()
+            
+            # Filter for issues with actual decisions
+            approval_decisions = []
+            for issue in issues:
+                if self._has_approval_decision(issue):
+                    approval_decisions.append(issue)
+            
+            self.logger.debug(f"Fetched {len(approval_decisions)} approval decisions")
+            return approval_decisions
+            
+        except Exception as e:
+            raise ExternalServiceError(
+                f"Failed to fetch approval decisions: {e}",
+                service_name="GitHub"
+            )
+    
+    def _generate_approval_request_body(
+        self,
+        story_id: str,
+        feature_data: Dict[str, Any],
+        quality_metrics: Dict[str, Any]
+    ) -> str:
+        """Generate approval request body with all necessary information."""
+        
+        template = f"""# 🎯 Feature Ready for Approval - {story_id}
+
+Hej!
+
+Feature **{feature_data.get('feature_title', 'Feature')}** has been completed and is ready for your review and approval.
+
+## 📊 Delivery Summary
+- **Story ID:** {story_id}
+- **Completion Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}
+- **Overall Quality Score:** {quality_metrics.get('overall_score', 'N/A')}/100
+- **Test Coverage:** {quality_metrics.get('test_coverage', 'N/A')}%
+
+## 🎮 Feature Access
+- **Staging URL:** {self._generate_staging_url(story_id)}
+- **Demo Scenario:** {feature_data.get('demo_scenario', 'Standard user workflow')}
+
+## ✅ Original Acceptance Criteria
+{self._format_acceptance_criteria(feature_data.get('acceptance_criteria', []))}
+
+## 📈 Quality Metrics Achieved
+- **Performance:** API {quality_metrics.get('api_response_time', 'N/A')}ms, Lighthouse {quality_metrics.get('lighthouse_score', 'N/A')}/100
+- **Accessibility:** WCAG AA {quality_metrics.get('accessibility_score', 'N/A')}% compliant  
+- **User Experience:** {quality_metrics.get('ux_score', 'N/A')}/5.0 for Anna persona
+- **DNA Compliance:** {quality_metrics.get('dna_compliance_score', 'N/A')}/5.0
+
+## ✅ Approval Process
+Please create an **Approval Issue** using our template to provide your decision:
+- Use template: [Feature Approval](.github/ISSUE_TEMPLATE/feature_approval.md)
+- Reference this delivery with Story ID: {story_id}
+- Provide detailed feedback if rejected
+
+## ⏱️ Response Timeline
+- **Target Response:** Within 48 hours
+- **Automatic Reminder:** After 24 hours if no response
+
+Tack så mycket!
+
+Mvh,
+DigiNativa AI Team (Project Manager)"""
+        
+        return template
+    
+    def _get_project_owner(self) -> str:
+        """Get project owner GitHub username."""
+        # This could be configured or extracted from environment
+        return os.getenv("GITHUB_PROJECT_OWNER", "project-owner")
+    
+    def _generate_staging_url(self, story_id: str) -> str:
+        """Generate staging URL for feature testing."""
+        base_staging_url = os.getenv("STAGING_BASE_URL", "https://staging.digitativa.se")
+        return f"{base_staging_url}/features/{story_id.lower()}"
+    
+    def _format_acceptance_criteria(self, criteria: List[str]) -> str:
+        """Format acceptance criteria for display."""
+        if not criteria:
+            return "No specific acceptance criteria provided"
+        
+        formatted = []
+        for i, criterion in enumerate(criteria, 1):
+            formatted.append(f"{i}. {criterion}")
+        
+        return "\n".join(formatted)
+    
+    def _has_approval_decision(self, issue: Dict[str, Any]) -> bool:
+        """Check if issue contains an approval decision."""
+        body = issue.get("body", "")
+        
+        # Look for checked approval boxes
+        decision_patterns = [
+            r"- \[x\] \*\*APPROVED\*\*",
+            r"- \[x\] \*\*REJECTED\*\*", 
+            r"- \[x\] \*\*APPROVED WITH MINOR ISSUES\*\*"
+        ]
+        
+        return any(re.search(pattern, body, re.IGNORECASE) for pattern in decision_patterns)
+    
     def get_rate_limit_status(self) -> Dict[str, Any]:
         """
         Get current GitHub API rate limit status.

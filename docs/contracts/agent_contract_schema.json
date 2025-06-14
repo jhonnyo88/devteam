@@ -50,7 +50,8 @@
         "developer", 
         "test_engineer",
         "qa_tester",
-        "quality_reviewer"
+        "quality_reviewer",
+        "deployment"
       ],
       "description": "Agent that should receive and process this contract"
     },

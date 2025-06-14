@@ -175,6 +175,10 @@ class ProjectManagerAgent(BaseAgent):
             # Re-raise external service errors as-is  
             raise
             
+        except BusinessLogicError:
+            # Re-raise business logic errors as-is
+            raise
+            
         except Exception as e:
             # Wrap unexpected errors
             self.logger.error(f"Unexpected error processing contract: {e}")

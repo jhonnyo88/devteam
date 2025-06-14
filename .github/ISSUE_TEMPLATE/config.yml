@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 DigiNativa Documentation
+    url: https://docs.digitativa.se
+    about: Check our documentation for common questions and guides
+  - name: 💬 Technical Support
+    url: mailto:support@digitativa.se
+    about: Contact our technical support team for urgent issues
+  - name: 🎯 Feature Planning Session
+    url: https://calendly.com/digitativa/planning
+    about: Schedule a session to discuss complex features or integrations

@@ -102,7 +102,7 @@ class ContractValidator:
             "developer": ["test_engineer"],
             "test_engineer": ["qa_tester"],
             "qa_tester": ["quality_reviewer"],
-            "quality_reviewer": ["project_manager"]  # For next iteration
+            "quality_reviewer": ["deployment", "developer"]  # deployment for approval, developer for rework
         }
         
         # Required design principles (NEVER change these for DigiNativa)
