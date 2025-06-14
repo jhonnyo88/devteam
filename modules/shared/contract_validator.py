@@ -216,7 +216,52 @@ class ContractValidator:
         Raises:
             ContractValidationError: For critical validation failures
         """
-        pass  # TODO: Implement main validation logic
+        errors = []
+        warnings = []
+        
+        try:
+            # 1. Schema validation
+            schema_errors = self._validate_schema(contract)
+            errors.extend(schema_errors)
+            
+            # 2. Business rule validation
+            business_errors = self._validate_business_rules(contract)
+            errors.extend(business_errors)
+            
+            # 3. DNA compliance validation
+            dna_errors = self._validate_dna_compliance(contract)
+            errors.extend(dna_errors)
+            
+            # 4. Quality gates validation (warnings only)
+            quality_warnings = self._validate_quality_gates(contract)
+            warnings.extend(quality_warnings)
+            
+            # Create validation result
+            result = ValidationResult(
+                is_valid=len(errors) == 0,
+                errors=errors,
+                warnings=warnings,
+                validation_timestamp=datetime.now().isoformat()
+            )
+            
+            if result.is_valid:
+                self.logger.debug("Contract validation passed")
+            else:
+                self.logger.warning(f"Contract validation failed with {len(errors)} errors")
+                
+            return result
+            
+        except Exception as e:
+            # Handle unexpected errors during validation
+            error_msg = f"Unexpected error during contract validation: {str(e)}"
+            self.logger.error(error_msg)
+            
+            return ValidationResult(
+                is_valid=False,
+                errors=[error_msg],
+                warnings=[],
+                validation_timestamp=datetime.now().isoformat()
+            )
     
     def _validate_schema(self, contract: Dict[str, Any]) -> List[str]:
         """
@@ -319,7 +364,25 @@ class ContractValidator:
         Returns:
             List of business rule validation errors
         """
-        pass  # TODO: Implement business rules validation
+        errors = []
+        
+        # Validate agent sequence
+        source = contract.get("source_agent")
+        target = contract.get("target_agent")
+        if source and target:
+            if not self._validate_agent_sequence(source, target):
+                errors.append(f"Invalid agent sequence: {source} → {target}")
+        
+        # Validate story ID format
+        story_id = contract.get("story_id", "")
+        if story_id and not self._validate_story_id_format(story_id):
+            errors.append(f"Invalid story ID format: {story_id}")
+        
+        # Validate file paths contain story_id
+        if not self._validate_file_paths(contract):
+            errors.append("File paths must contain story_id for traceability")
+        
+        return errors
     
     def _validate_dna_compliance(self, contract: Dict[str, Any]) -> List[str]:
         """
@@ -335,7 +398,28 @@ class ContractValidator:
         Returns:
             List of DNA compliance errors
         """
-        pass  # TODO: Implement DNA compliance validation
+        errors = []
+        dna_compliance = contract.get("dna_compliance", {})
+        
+        # Check required sections exist
+        required_sections = ["design_principles_validation", "architecture_compliance"]
+        for section in required_sections:
+            if section not in dna_compliance:
+                errors.append(f"Missing DNA compliance section: {section}")
+        
+        # Validate design principles
+        design_principles = dna_compliance.get("design_principles_validation", {})
+        for principle in self.required_design_principles:
+            if principle not in design_principles:
+                errors.append(f"Missing design principle validation: {principle}")
+        
+        # Validate architecture compliance
+        architecture = dna_compliance.get("architecture_compliance", {})
+        for arch_principle in self.required_architecture_principles:
+            if arch_principle not in architecture:
+                errors.append(f"Missing architecture principle: {arch_principle}")
+        
+        return errors
     
     def _validate_quality_gates(self, contract: Dict[str, Any]) -> List[str]:
         """
@@ -347,7 +431,18 @@ class ContractValidator:
         Returns:
             List of quality gate warnings (not errors - these are suggestions)
         """
-        pass  # TODO: Implement quality gates validation
+        warnings = []
+        
+        quality_gates = contract.get("quality_gates", [])
+        if not quality_gates:
+            warnings.append("No quality gates defined - consider adding automated checks")
+        
+        # Validate known quality gate formats
+        for gate in quality_gates:
+            if not self._is_valid_quality_gate_format(gate):
+                warnings.append(f"Quality gate may not be machine-readable: {gate}")
+        
+        return warnings
     
     def _validate_agent_sequence(self, source_agent: str, target_agent: str) -> bool:
         """
@@ -363,7 +458,8 @@ class ContractValidator:
         Returns:
             True if sequence is valid, False otherwise
         """
-        pass  # TODO: Implement agent sequence validation
+        valid_targets = self.valid_agent_sequences.get(source_agent, [])
+        return target_agent in valid_targets
     
     def _validate_story_id_format(self, story_id: str) -> bool:
         """
@@ -380,7 +476,9 @@ class ContractValidator:
         Returns:
             True if format is valid, False otherwise
         """
-        pass  # TODO: Implement story ID format validation
+        import re
+        pattern = r"^STORY-[A-Za-z0-9-]+-\d+$"
+        return bool(re.match(pattern, story_id))
     
     def _validate_file_paths(self, contract: Dict[str, Any]) -> bool:
         """
@@ -397,7 +495,27 @@ class ContractValidator:
         Returns:
             True if all file paths are valid, False otherwise
         """
-        pass  # TODO: Implement file path validation
+        story_id = contract.get("story_id", "")
+        if not story_id:
+            return True  # Can't validate if no story_id
+        
+        # Check input files reference story_id
+        input_files = contract.get("input_requirements", {}).get("required_files", [])
+        for file_path in input_files:
+            if "{story_id}" in file_path:
+                continue  # Template format is valid
+            if story_id not in file_path:
+                return False  # Must contain story_id for traceability
+        
+        # Check output files reference story_id
+        output_files = contract.get("output_specifications", {}).get("deliverable_files", [])
+        for file_path in output_files:
+            if "{story_id}" in file_path:
+                continue  # Template format is valid
+            if story_id not in file_path:
+                return False  # Must contain story_id for traceability
+        
+        return True
     
     def _validate_design_principles_completeness(self, design_principles: Dict[str, Any]) -> List[str]:
         """
@@ -436,7 +554,7 @@ class ContractValidator:
         Returns:
             True if gate appears to be machine-readable
         """
-        pass  # TODO: Implement quality gate format validation
+        return any(pattern in gate.lower() for pattern in self.machine_readable_quality_patterns)
     
     def get_valid_next_agents(self, source_agent: str) -> List[str]:
         """
