@@ -35,8 +35,16 @@ class TestQATesterContractCompliance:
     
     @pytest.fixture
     def qa_tester_agent(self):
-        """Create QA Tester agent instance."""
-        return QATesterAgent()
+        """Create QA Tester agent instance with AI config for testing."""
+        # Use in-memory database for testing to avoid file system dependencies
+        config = {
+            "ai_config": {
+                "db_path": ":memory:",
+                "learning_enabled": True,
+                "confidence_threshold": 70.0
+            }
+        }
+        return QATesterAgent(config=config)
     
     @pytest.fixture
     def valid_test_engineer_output_contract(self):

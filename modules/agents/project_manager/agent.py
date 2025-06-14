@@ -35,6 +35,9 @@ from .tools.github_integration import GitHubIntegration
 from .tools.story_analyzer import StoryAnalyzer
 from .tools.dna_compliance_checker import DNAComplianceChecker
 from .tools.learning_engine import LearningEngine
+from .tools.swedish_municipal_communicator import SwedishMunicipalCommunicator
+from .tools.team_coordinator import TeamCoordinator
+from .tools.stakeholder_relationship_manager import StakeholderRelationshipManager
 
 
 class ProjectManagerAgent(BaseAgent):
@@ -71,6 +74,9 @@ class ProjectManagerAgent(BaseAgent):
             self.story_analyzer = StoryAnalyzer(config)
             self.dna_compliance_checker = DNAComplianceChecker(config)
             self.learning_engine = LearningEngine(config)
+            self.swedish_communicator = SwedishMunicipalCommunicator(config)
+            self.team_coordinator = TeamCoordinator(config)
+            self.stakeholder_manager = StakeholderRelationshipManager(config)
             
             self.logger.info("Project Manager Agent tools initialized successfully")
             
@@ -177,6 +183,15 @@ class ProjectManagerAgent(BaseAgent):
                 acceptance_criteria,
                 complexity_assessment
             )
+            
+            # Step 8: Coordinate team workflow (NEW)
+            try:
+                team_coordination = await self.team_coordinator.coordinate_team_workflow(
+                    story_id, output_contract
+                )
+                output_contract['team_coordination'] = team_coordination
+            except Exception as e:
+                self.logger.warning(f"Team coordination failed, continuing without: {e}")
             
             self.logger.info(f"Successfully processed story: {story_id}")
             return output_contract
@@ -732,7 +747,10 @@ class ProjectManagerAgent(BaseAgent):
                 "github_integration": "initialized" if hasattr(self, 'github_integration') else "error",
                 "story_analyzer": "initialized" if hasattr(self, 'story_analyzer') else "error",
                 "dna_compliance_checker": "initialized" if hasattr(self, 'dna_compliance_checker') else "error",
-                "learning_engine": "initialized" if hasattr(self, 'learning_engine') else "error"
+                "learning_engine": "initialized" if hasattr(self, 'learning_engine') else "error",
+                "swedish_communicator": "initialized" if hasattr(self, 'swedish_communicator') else "error",
+                "team_coordinator": "initialized" if hasattr(self, 'team_coordinator') else "error",
+                "stakeholder_manager": "initialized" if hasattr(self, 'stakeholder_manager') else "error"
             },
             "configuration": {
                 "max_concurrent_stories": self.max_concurrent_stories,
@@ -806,4 +824,212 @@ class ProjectManagerAgent(BaseAgent):
                 
         except Exception as e:
             self.logger.error(f"Failed to get learning status: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def generate_swedish_municipal_message(
+        self,
+        message_type: str,
+        recipient_role: str,
+        content_data: Dict[str, Any],
+        urgency_level: str = "normal"
+    ) -> Dict[str, Any]:
+        """
+        Generate culturally appropriate Swedish municipal message.
+        
+        Args:
+            message_type: Type of communication (formal_request, status_update, etc.)
+            recipient_role: Swedish municipal role (kommunchef, utbildningskoordinator, etc.)
+            content_data: Message content and context
+            urgency_level: Message urgency level
+            
+        Returns:
+            Generated Swedish municipal message
+        """
+        try:
+            if hasattr(self, 'swedish_communicator'):
+                from .tools.swedish_municipal_communicator import CommunicationType, MunicipalRole
+                
+                # Convert string parameters to enums
+                comm_type = CommunicationType(message_type)
+                role = MunicipalRole(recipient_role)
+                
+                return self.swedish_communicator.generate_municipal_specific_message(
+                    comm_type, role, content_data, urgency_level
+                )
+            else:
+                return {'status': 'swedish_communicator_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to generate Swedish municipal message: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def get_team_status_dashboard(self) -> Dict[str, Any]:
+        """
+        Get comprehensive team status dashboard.
+        
+        Returns:
+            Team status dashboard with performance metrics and coordination status
+        """
+        try:
+            if hasattr(self, 'team_coordinator'):
+                return await self.team_coordinator.get_team_status_dashboard()
+            else:
+                return {'status': 'team_coordinator_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to get team status dashboard: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def automate_feature_approval_workflow(
+        self,
+        story_id: str,
+        feature_data: Dict[str, Any],
+        quality_metrics: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Automate GitHub approval workflow for completed features.
+        
+        Args:
+            story_id: Story identifier
+            feature_data: Feature information and requirements
+            quality_metrics: Quality analysis results
+            
+        Returns:
+            Approval workflow automation result
+        """
+        try:
+            if hasattr(self, 'team_coordinator'):
+                return await self.team_coordinator.automate_github_approval_workflow(
+                    story_id, feature_data, quality_metrics
+                )
+            else:
+                return {'status': 'team_coordinator_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to automate approval workflow: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def validate_municipal_communication(
+        self,
+        message: str,
+        context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Validate message for Swedish municipal cultural appropriateness.
+        
+        Args:
+            message: Message text to validate
+            context: Communication context
+            
+        Returns:
+            Validation results with cultural appropriateness feedback
+        """
+        try:
+            if hasattr(self, 'swedish_communicator'):
+                return self.swedish_communicator.validate_cultural_appropriateness(message, context)
+            else:
+                return {'status': 'swedish_communicator_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to validate municipal communication: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def learn_stakeholder_preferences(
+        self,
+        stakeholder_id: str,
+        interaction_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Learn and update stakeholder preferences from interaction data.
+        
+        Args:
+            stakeholder_id: Stakeholder identifier
+            interaction_data: Data from recent interaction
+            
+        Returns:
+            Learning results and updated preferences
+        """
+        try:
+            if hasattr(self, 'stakeholder_manager'):
+                return await self.stakeholder_manager.learn_stakeholder_preferences(
+                    stakeholder_id, interaction_data
+                )
+            else:
+                return {'status': 'stakeholder_manager_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to learn stakeholder preferences: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def predict_stakeholder_approval(
+        self,
+        stakeholder_id: str,
+        proposal_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Predict likelihood of stakeholder approval for a proposal.
+        
+        Args:
+            stakeholder_id: Stakeholder identifier
+            proposal_data: Proposal/feature data for approval prediction
+            
+        Returns:
+            Approval prediction with confidence and recommendations
+        """
+        try:
+            if hasattr(self, 'stakeholder_manager'):
+                return await self.stakeholder_manager.predict_approval_likelihood(
+                    stakeholder_id, proposal_data
+                )
+            else:
+                return {'status': 'stakeholder_manager_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to predict stakeholder approval: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def generate_stakeholder_communication(
+        self,
+        stakeholder_id: str,
+        communication_type: str,
+        content_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Generate personalized communication for specific stakeholder.
+        
+        Args:
+            stakeholder_id: Stakeholder identifier
+            communication_type: Type of communication
+            content_data: Content to be communicated
+            
+        Returns:
+            Personalized communication optimized for stakeholder
+        """
+        try:
+            if hasattr(self, 'stakeholder_manager'):
+                return await self.stakeholder_manager.generate_personalized_communication(
+                    stakeholder_id, communication_type, content_data
+                )
+            else:
+                return {'status': 'stakeholder_manager_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to generate stakeholder communication: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def optimize_stakeholder_relationships(self) -> Dict[str, Any]:
+        """
+        Analyze and optimize all stakeholder relationships.
+        
+        Returns:
+            Optimization recommendations and relationship insights
+        """
+        try:
+            if hasattr(self, 'stakeholder_manager'):
+                return await self.stakeholder_manager.optimize_stakeholder_relationships()
+            else:
+                return {'status': 'stakeholder_manager_not_initialized'}
+                
+        except Exception as e:
+            self.logger.error(f"Failed to optimize stakeholder relationships: {e}")
             return {'status': 'error', 'message': str(e)}

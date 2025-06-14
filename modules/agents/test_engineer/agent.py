@@ -36,6 +36,7 @@ from .tools.test_generator import TestGenerator
 from .tools.coverage_analyzer import CoverageAnalyzer
 from .tools.performance_tester import PerformanceTester
 from .tools.security_scanner import SecurityScanner
+from .tools.dna_test_validator import DNATestValidator
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -76,6 +77,7 @@ class TestEngineerAgent(BaseAgent):
         self.coverage_analyzer = CoverageAnalyzer(config)
         self.performance_tester = PerformanceTester(config)
         self.security_scanner = SecurityScanner(config)
+        self.dna_test_validator = DNATestValidator(config)
         
         # Test Engineer specific configuration
         self.test_output_path = self.config.get("test_output_path", "tests")
@@ -195,7 +197,17 @@ class TestEngineerAgent(BaseAgent):
                 coverage_report
             )
             
-            # Step 9: Generate test automation configuration
+            # Step 9: Validate DNA compliance (ACTIVE DNA VALIDATION)
+            self.logger.info("Performing active DNA validation")
+            dna_validation_result = await self.dna_test_validator.validate_test_dna_compliance(
+                integration_test_suite,
+                e2e_test_suite,
+                performance_results,
+                coverage_report,
+                input_data
+            )
+            
+            # Step 10: Generate test automation configuration
             automation_config = await self._generate_automation_configuration(
                 integration_test_suite,
                 e2e_test_suite,
@@ -203,7 +215,7 @@ class TestEngineerAgent(BaseAgent):
                 story_id
             )
             
-            # Step 10: Create output contract for QA Tester
+            # Step 11: Create output contract for QA Tester
             output_contract = await self._create_output_contract(
                 input_contract,
                 story_id,
@@ -212,7 +224,8 @@ class TestEngineerAgent(BaseAgent):
                 performance_results,
                 security_scan_results,
                 coverage_report,
-                automation_config
+                automation_config,
+                dna_validation_result
             )
             
             self.logger.info(f"Testing completed successfully for story: {story_id}")
@@ -408,7 +421,8 @@ class TestEngineerAgent(BaseAgent):
         performance_results: Dict[str, Any],
         security_scan_results: Dict[str, Any],
         coverage_report: Dict[str, Any],
-        automation_config: Dict[str, Any]
+        automation_config: Dict[str, Any],
+        dna_validation_result: Any = None
     ) -> Dict[str, Any]:
         """
         Create output contract for QA Tester.
@@ -426,13 +440,27 @@ class TestEngineerAgent(BaseAgent):
         Returns:
             Output contract for QA Tester
         """
+        # Enhanced DNA compliance with active validation results
+        enhanced_dna_compliance = input_contract.get("dna_compliance", {})
+        if dna_validation_result:
+            enhanced_dna_compliance.update({
+                "test_engineer_dna_validation": {
+                    "overall_dna_compliant": dna_validation_result.overall_dna_compliant,
+                    "time_respect_compliant": dna_validation_result.time_respect_compliant,
+                    "pedagogical_value_compliant": dna_validation_result.pedagogical_value_compliant,
+                    "professional_tone_compliant": dna_validation_result.professional_tone_compliant,
+                    "dna_compliance_score": dna_validation_result.dna_compliance_score,
+                    "validation_timestamp": dna_validation_result.validation_timestamp
+                }
+            })
+
         return {
             "contract_version": "1.0",
             "contract_type": "testing_to_qa",
             "story_id": story_id,
             "source_agent": "test_engineer",
             "target_agent": "qa_tester",
-            "dna_compliance": input_contract.get("dna_compliance"),
+            "dna_compliance": enhanced_dna_compliance,
             
             "input_requirements": {
                 "required_files": [
@@ -449,6 +477,7 @@ class TestEngineerAgent(BaseAgent):
                     "security_scan_results": security_scan_results,
                     "coverage_report": coverage_report,
                     "automation_config": automation_config,
+                    "dna_validation_results": dna_validation_result.quality_reviewer_metrics if dna_validation_result else {},
                     "original_implementation": {
                         "component_implementations": input_contract.get("input_requirements", {}).get("required_data", {}).get("component_implementations", []),
                         "api_implementations": input_contract.get("input_requirements", {}).get("required_data", {}).get("api_implementations", [])

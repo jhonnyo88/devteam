@@ -34,6 +34,7 @@ from ...shared.exceptions import (
 from .tools.quality_scorer import QualityScorer
 from .tools.deployment_validator import DeploymentValidator
 from .tools.final_approver import FinalApprover
+from .tools.client_communicator import ClientCommunicator
 
 
 class QualityReviewerAgent(BaseAgent):
@@ -59,6 +60,7 @@ class QualityReviewerAgent(BaseAgent):
         self.quality_scorer = QualityScorer()
         self.deployment_validator = DeploymentValidator()
         self.final_approver = FinalApprover()
+        self.client_communicator = ClientCommunicator()
         
         # Quality thresholds from DNA principles
         self.quality_thresholds = {
@@ -101,12 +103,21 @@ class QualityReviewerAgent(BaseAgent):
             # Make final approval decision
             approval_decision = await self._make_approval_decision(quality_analysis, deployment_readiness)
             
+            # Handle client communication based on approval decision
+            client_communication = await self._handle_client_communication(
+                input_contract.get("story_id"), 
+                quality_analysis, 
+                deployment_readiness, 
+                approval_decision
+            )
+            
             # Create output contract
             output_contract = await self._create_output_contract(
                 input_contract, 
                 quality_analysis, 
                 deployment_readiness, 
-                approval_decision
+                approval_decision,
+                client_communication
             )
             
             # Log decision
@@ -346,8 +357,82 @@ class QualityReviewerAgent(BaseAgent):
                 business_rule="approval_decision_logic"
             )
     
+    async def _handle_client_communication(self, story_id: str, quality_analysis: Dict[str, Any],
+                                          deployment_readiness: Dict[str, Any], approval_decision: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Handle client communication based on approval decision.
+        
+        Args:
+            story_id: Story identifier
+            quality_analysis: Quality analysis results
+            deployment_readiness: Deployment readiness validation
+            approval_decision: Final approval decision
+            
+        Returns:
+            Client communication data
+        """
+        try:
+            self.logger.info(f"Handling client communication for {story_id}")
+            
+            approved = approval_decision["approved"]
+            
+            if approved:
+                # Create approval request for staging/production
+                staging_url = f"https://staging.digitativa.se/{story_id}"  # Mock staging URL
+                
+                approval_request = await self.client_communicator.create_approval_request(
+                    story_id, quality_analysis, deployment_readiness, staging_url
+                )
+                
+                # Create staging notification for client testing
+                test_instructions = [
+                    "Logga in med dina testuppgifter",
+                    "Navigera till den nya funktionen", 
+                    "Testa grundläggande användarflöden",
+                    "Kontrollera att allt fungerar som förväntat",
+                    "Rapportera eventuella problem i GitHub-ärendet"
+                ]
+                
+                staging_notification = await self.client_communicator.create_staging_notification(
+                    story_id, staging_url, quality_analysis["overall_score"], test_instructions
+                )
+                
+                return {
+                    "communication_type": "approval_request",
+                    "approval_request": approval_request,
+                    "staging_notification": staging_notification,
+                    "quality_report": await self.client_communicator.generate_quality_report(
+                        story_id, quality_analysis, deployment_readiness
+                    )
+                }
+            else:
+                # Create rejection feedback
+                quality_issues = quality_analysis.get("quality_issues", [])
+                recommendations = approval_decision.get("recommendations", [])
+                blocking_issues = approval_decision.get("blocking_issues", [])
+                
+                rejection_feedback = await self.client_communicator.handle_rejection_feedback(
+                    story_id, quality_issues, recommendations, blocking_issues
+                )
+                
+                return {
+                    "communication_type": "rejection_feedback",
+                    "rejection_feedback": rejection_feedback,
+                    "quality_report": await self.client_communicator.generate_quality_report(
+                        story_id, quality_analysis, deployment_readiness
+                    )
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Client communication failed for {story_id}: {e}")
+            return {
+                "communication_type": "error",
+                "error_message": f"Client communication failed: {e}"
+            }
+    
     async def _create_output_contract(self, input_contract: Dict[str, Any], quality_analysis: Dict[str, Any], 
-                                    deployment_readiness: Dict[str, Any], approval_decision: Dict[str, Any]) -> Dict[str, Any]:
+                                    deployment_readiness: Dict[str, Any], approval_decision: Dict[str, Any],
+                                    client_communication: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create output contract for deployment or rejection.
         
@@ -395,7 +480,8 @@ class QualityReviewerAgent(BaseAgent):
                         "deployment_readiness": deployment_readiness,
                         "approval_reasoning": approval_decision["reasoning"],
                         "blocking_issues": approval_decision.get("blocking_issues", []),
-                        "recommendations": approval_decision.get("recommendations", [])
+                        "recommendations": approval_decision.get("recommendations", []),
+                        "client_communication": client_communication
                     },
                     "required_validations": [
                         "quality_score_validated",
@@ -427,11 +513,13 @@ class QualityReviewerAgent(BaseAgent):
                     "final_quality_score_calculated",
                     "deployment_readiness_validated",
                     "approval_decision_made",
-                    "documentation_complete"
+                    "documentation_complete",
+                    "client_communication_sent"
                 ],
                 "handoff_criteria": [
                     "quality_analysis_complete",
                     "approval_decision_documented",
+                    "client_communication_completed",
                     "next_steps_defined"
                 ]
             }
@@ -461,7 +549,8 @@ class QualityReviewerAgent(BaseAgent):
             "final_quality_score_calculated": self._check_quality_score_gate,
             "deployment_readiness_validated": self._check_deployment_readiness_gate,
             "approval_decision_made": self._check_approval_decision_gate,
-            "documentation_complete": self._check_documentation_gate
+            "documentation_complete": self._check_documentation_gate,
+            "client_communication_sent": self._check_client_communication_gate
         }
         
         checker = quality_checks.get(gate)
@@ -519,6 +608,16 @@ class QualityReviewerAgent(BaseAgent):
         return all(
             doc in deliverables and deliverables[doc] is not None
             for doc in required_docs
+        )
+    
+    def _check_client_communication_gate(self, deliverables: Dict[str, Any]) -> bool:
+        """Check if client communication has been sent."""
+        client_communication = deliverables.get("client_communication", {})
+        
+        return (
+            "communication_type" in client_communication and
+            client_communication["communication_type"] in ["approval_request", "rejection_feedback"] and
+            "quality_report" in client_communication
         )
     
     def _check_quality_gate(self, gate: str, deliverables: Dict[str, Any]) -> bool:

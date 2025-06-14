@@ -25,7 +25,6 @@ Changes are backward compatible and do not affect existing contracts.
 
 import json
 import sqlite3
-import numpy as np
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta

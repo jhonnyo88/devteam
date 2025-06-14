@@ -3,11 +3,17 @@ Comprehensive tests for DeveloperAgent.
 
 PURPOSE:
 Test suite ensuring the Developer agent meets all requirements:
-- Contract processing and validation
+- Agent core logic and DNA compliance validation
 - Code generation quality and standards
 - Architecture principle compliance
 - Performance and quality metrics
 - Error handling and recovery
+
+TEST STRATEGY COMPLIANCE:
+- Follows TEST_STRATEGY.md structure
+- Agent-specific tests in modules/agents/developer/tests/
+- Focuses on agent logic, not contract compliance
+- Uses proper pytest markers for categorization
 """
 
 import pytest
@@ -23,17 +29,22 @@ from ...shared.base_agent import AgentExecutionResult
 from ...shared.exceptions import AgentExecutionError, DNAComplianceError, QualityGateError
 
 
+@pytest.mark.agent
 class TestDeveloperAgent:
     """
-    Comprehensive test suite for DeveloperAgent.
+    Comprehensive test suite for DeveloperAgent core logic.
     
-    COVERAGE AREAS:
-    - Contract processing and validation
-    - Code generation (React + FastAPI)
+    COVERAGE AREAS (per TEST_STRATEGY.md):
+    - Agent initialization and configuration
+    - Code generation (React + FastAPI) 
+    - DNA compliance validation in generated code
+    - Architecture validation
     - Quality gates and compliance
     - Git operations and branch management
     - Error handling and recovery
     - Performance requirements
+    
+    NOTE: Contract compliance tests are in test_contract_compliance.py
     """
     
     @pytest.fixture
@@ -352,3 +363,206 @@ class TestDeveloperAgent:
         '''
         complexity = developer_agent._calculate_cyclomatic_complexity(complex_code)
         assert complexity > 10  # Should be flagged as too complex
+    
+    @pytest.mark.dna
+    @pytest.mark.asyncio
+    async def test_validate_pedagogical_value_in_code(self, developer_agent):
+        """Test pedagogical value validation in generated code."""
+        
+        # Good pedagogical code
+        good_components = [
+            {
+                "name": "LearningModule",
+                "code": {
+                    "component": '''
+                    /**
+                     * LearningModule - Facilitates municipal training progression
+                     * 
+                     * @param props.learningProgress - Current learning state
+                     * @returns JSX.Element
+                     */
+                    const LearningModule = (props) => {
+                        const [municipalTaskStep, setMunicipalTaskStep] = useState(0);
+                        // Show clear step-by-step progress
+                        return <div>Step {municipalTaskStep + 1} of 5</div>;
+                    };
+                    '''
+                }
+            }
+        ]
+        
+        good_apis = [
+            {
+                "name": "learning_progress",
+                "code": {
+                    "endpoint": '''
+                    async def learning_progress(request: LearningRequest) -> LearningResponse:
+                        """
+                        Track municipal employee learning progress.
+                        
+                        Args:
+                            request: Learning progress data for training validation
+                            
+                        Returns:
+                            LearningResponse: Updated learning status with error_message for validation
+                        """
+                        return LearningResponse(success=True)
+                    '''
+                }
+            }
+        ]
+        
+        score = await developer_agent._validate_pedagogical_value_in_code(
+            good_components, good_apis, {"title": "Municipal Training"}
+        )
+        
+        assert score >= 4.0, f"Pedagogical value score too low: {score}"
+    
+    @pytest.mark.dna
+    @pytest.mark.asyncio
+    async def test_validate_code_complexity(self, developer_agent):
+        """Test code complexity validation."""
+        
+        # Complex component that should fail
+        complex_components = [
+            {
+                "name": "ComplexComponent",
+                "code": {
+                    "component": '''
+                    const ComplexComponent = (props) => {
+                        if (props.a) {
+                            if (props.b) {
+                                for (let i = 0; i < 10; i++) {
+                                    if (props.c && props.d || props.e) {
+                                        try {
+                                            while (true) {
+                                                if (i % 2) {
+                                                    return i;
+                                                } else {
+                                                    continue;
+                                                }
+                                            }
+                                        } catch (e) {
+                                            if (e.type) {
+                                                throw e;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return null;
+                    };
+                    '''
+                }
+            }
+        ]
+        
+        violations = await developer_agent._validate_code_complexity(complex_components, [])
+        assert len(violations) > 0, "Complex code should be flagged"
+        assert "complexity too high" in violations[0]
+    
+    @pytest.mark.dna
+    @pytest.mark.asyncio 
+    async def test_validate_professional_tone_in_code(self, developer_agent):
+        """Test professional tone validation in code."""
+        
+        # Unprofessional code
+        bad_components = [
+            {
+                "name": "BadComponent",
+                "code": {
+                    "component": '''
+                    // TODO: Fix this later, this is a dirty hack
+                    const BadComponent = (props) => {
+                        // This is stupid but it works
+                        const wtf = props.data;
+                        return <div>Error occurred</div>; // No help for user
+                    };
+                    '''
+                }
+            }
+        ]
+        
+        violations = await developer_agent._validate_professional_tone_in_code(bad_components, [])
+        assert len(violations) > 0, "Unprofessional tone should be flagged"
+        assert any("TODO" in violation or "dirty" in violation or "stupid" in violation for violation in violations)
+    
+    @pytest.mark.dna
+    @pytest.mark.asyncio
+    async def test_validate_policy_implementation(self, developer_agent):
+        """Test policy implementation validation."""
+        
+        # Component missing accessibility
+        bad_components = [
+            {
+                "name": "FormComponent",
+                "code": {
+                    "component": '''
+                    const FormComponent = () => {
+                        return (
+                            <form>
+                                <input type="text" />
+                                <button>Submit</button>
+                            </form>
+                        );
+                    };
+                    '''
+                }
+            }
+        ]
+        
+        violations = await developer_agent._validate_policy_implementation(
+            bad_components, [], {"title": "Municipal Form"}
+        )
+        assert len(violations) > 0, "Missing accessibility should be flagged"
+        assert "accessibility attributes" in violations[0]
+    
+    @pytest.mark.dna
+    @pytest.mark.asyncio
+    async def test_validate_time_respect_in_code(self, developer_agent):
+        """Test time respect validation in code."""
+        
+        # Component with API call but no loading indicator
+        bad_components = [
+            {
+                "name": "ApiComponent",
+                "code": {
+                    "component": '''
+                    const ApiComponent = () => {
+                        const fetchData = async () => {
+                            const response = await fetch('/api/data');
+                            return response.json();
+                        };
+                        
+                        return <div>Data will load...</div>;
+                    };
+                    '''
+                }
+            }
+        ]
+        
+        violations = await developer_agent._validate_time_respect_in_code(bad_components, [])
+        assert len(violations) > 0, "Missing loading indicators should be flagged"
+        assert "loading indicators" in violations[0]
+    
+    @pytest.mark.performance
+    def test_dna_validation_performance(self, developer_agent):
+        """Test that DNA validation performs within acceptable limits."""
+        import time
+        
+        # Create test data
+        components = [{"name": "TestComp", "code": {"component": "const TestComp = () => <div>Test</div>;"}}]
+        apis = [{"name": "test_api", "code": {"endpoint": "async def test_api(): return {}"}}]
+        
+        # Measure validation time
+        start_time = time.time()
+        
+        # Run individual validation methods (sync versions for performance test)
+        developer_agent._calculate_cyclomatic_complexity("if (true) { return 1; }")
+        
+        end_time = time.time()
+        validation_time = end_time - start_time
+        
+        # Should complete quickly
+        assert validation_time < 0.1, f"DNA validation too slow: {validation_time:.3f}s (max: 0.1s)"
