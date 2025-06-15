@@ -1,0 +1,68 @@
+{
+  "story_id": "STORY-GH-24",
+  "feature_data": {
+    "feature_description": "[FEATURE]  Grundläggande kommunal onboarding-modul\n\n### Feature Summary\n\nGrundläggande kommunal onboarding-modul för nya medarbetare\n\n### User Story\n\nAs Anna (kommunal förvaltare), I want a simple onboarding module that introduces new employees to our organization structure and basic processes so that they can become productive faster and feel confident in their new role without requiring extensive manual guidance from HR.\n\n### Design Principles Alignment (5 Core Principles)\n\n- [x] 🎓 **Pedagogik Framför Allt** - Serves clear educational goals about digitalization strategy\n- [x] 🌉 **Policy till Praktik** - Bridges abstract policy concepts to practical implementation\n- [x] ⏰ **Respekt för Tid** - Respects busy schedules (≤10 minute learning sessions)\n- [x] 🔗 **Helhetssyn** - Shows system connections and holistic thinking\n- [x] 🎯 **Intelligens, Inte Infantilisering** - Professional tone and sophisticated approach\n\n### Architecture Principles Compliance (4 Core Principles)\n\n- [x] 🔌 **API-First Design** - All functionality accessible via REST APIs\n- [x] 🚫 **Stateless Backend** - No server-side sessions, all state from client\n- [x] 🎯 **Separation of Concerns** - Frontend and backend remain completely separate\n- [x] 💎 **Simplicity First** - Choose simplest solution that works\n\n### Primary Target Persona\n\nAnna (Offentlig förvaltare - primary learning persona)\n\n### Municipal Department Focus\n\nHR/Personalavdelning (Human resources)\n\n### Municipal Use Case & Policy Alignment\n\n**Municipal Process:** New employee onboarding and orientation process\n\n**Policy Alignment:** Supports municipal HR policy for systematic employee introduction and ensures consistent quality in the onboarding experience across all departments\n\n**Expected Impact:** \n- 50% reduction in HR time spent on manual onboarding\n- Improved new employee confidence and faster time-to-productivity\n- Standardized organizational knowledge transfer\n\n### Learning Objectives (Check all that apply)\n\n- [x] 📋 **Policy Understanding** - Comprehend new digitalization policies\n- [x] 🔧 **Practical Application** - Apply policies to real work scenarios\n- [x] 🤝 **Stakeholder Engagement** - Improve collaboration across departments\n- [ ] 📊 **Data-Driven Decisions** - Use data to inform municipal decisions\n- [ ] 🛡️ **Risk Management** - Identify and mitigate digitalization risks\n- [ ] 🎯 **Strategic Thinking** - Understand long-term digital transformation\n- [ ] 💡 **Innovation Mindset** - Embrace new digital solutions\n- [ ] 👥 **Change Management** - Lead organizational digital change\n- [ ] 🔒 **Security Awareness** - Understand digital security requirements\n- [ ] 📈 **Performance Measurement** - Track and evaluate digital initiatives\n\n### Success Metrics & Measurement\n\n**Completion Rate Target:** >85% of new employees complete within first week\n\n**Satisfaction Score Target:** >4.0/5.0 user satisfaction\n\n**Knowledge Retention Measure:** >75% pass rate on follow-up quiz after 1 week\n\n**Behavioral Impact Expected:** 25% faster integration into work teams, reduced questions to HR\n\n### Maximum Completion Time\n\n5 minutes (quick task)\n\n### Target Completion Time\n\n3 minutes\n\n### Technical Requirements (AI Team Will Implement)\n\n- [x] ⚛️ **React Components** - Custom UI components needed\n- [x] 🎨 **Shadcn/UI Integration** - Use existing component library\n- [ ] 🎮 **Kenney.UI Assets** - Game-style visual elements needed\n- [ ] 🔌 **API Endpoints** - New backend functionality required\n- [ ] 💾 **Database Changes** - Data model modifications needed\n- [x] 📱 **Mobile Responsive** - Must work on mobile devices\n- [x] ♿ **Accessibility (WCAG AA)** - Screen reader & keyboard navigation\n- [ ] 🌐 **Multi-language Support** - Swedish + English support\n- [x] 📊 **Analytics Integration** - Usage tracking and metrics\n- [ ] 🔒 **Authentication Required** - User login needed\n\n### Performance Requirements (Non-Negotiable)\n\n- [x] ⚡ **API Response Time** - All endpoints must respond <200ms\n- [x] 🚀 **Lighthouse Score** - Performance score >90\n- [ ] 📦 **Bundle Size** - Keep JavaScript bundle impact minimal\n- [x] 📱 **Mobile Performance** - Smooth operation on mobile devices\n- [x] 🔧 **TypeScript Compliance** - Zero TypeScript errors\n- [x] ✅ **Test Coverage** - 100% code coverage required\n\n### Estimated Implementation Complexity\n\nSimple (1-2 components, minimal logic) - 2-4 hours\n\n### Business Priority Level\n\nP1 - High (key business value, current focus area)\n\n### Acceptance Criteria (Detailed)\n\n- [ ] User can access onboarding module from main navigation\n- [ ] Module displays 3 department sections (Kommunledning, HR, IT)\n- [ ] Each section loads within 2 seconds\n- [ ] Progress indicator shows completion status\n- [ ] Knowledge check with 3 questions, 80% pass requirement\n- [ ] All content available in Swedish\n- [ ] Works correctly on desktop, tablet, and mobile\n- [ ] Keyboard navigation works for all interactive elements\n- [ ] Screen reader announces section transitions correctly\n- [ ] Completion tracked in user progress system\n- [ ] Success metrics automatically collected\n- [ ] Graceful error handling with helpful Swedish messages\n\n### Feature Dependencies\n\nNone (foundational feature)\n\n### Technical Considerations & Constraints\n\n**Integrations Required:**\n- User authentication system integration\n- Progress tracking API integration\n- Analytics/metrics collection system\n\n**Security Considerations:**\n- GDPR compliance for employee data\n- Municipal data privacy requirements\n- Secure employee information handling\n\n**Performance Constraints:**\n- Must load quickly on government network infrastructure\n- Support for older browsers used in municipal environments\n- Efficient data usage for mobile access\n\n**Browser/Device Support:**\n- Modern browsers (Chrome, Firefox, Safari, Edge)\n- Mobile devices (iOS Safari, Android Chrome)\n- Basic accessibility for screen readers\n\n### Story ID Prefix (Optional)\n\nONBOARD\n\n### Special Agent Instructions (Optional)\n\n- [x] 🎨 **Game Designer Focus** - Emphasize interactive/gamification elements\n- [ ] 💻 **Developer Focus** - Complex technical implementation expected\n- [ ] 🧪 **Test Engineer Focus** - Extra emphasis on edge case testing\n- [x] 🔍 **QA Focus** - Intensive accessibility and persona testing needed\n- [ ] ⚡ **Performance Focus** - Critical performance optimization required\n\n### Additional Context & Resources\n\n**Visual References:** \n- Clean, professional design similar to government websites\n- Simple iconography for department representation\n- Clear progress indicators\n\n**Related Research:** \n- Municipal HR onboarding best practices\n- Swedish government digital accessibility standards\n- Employee feedback on current manual onboarding process\n\n**Similar Features:** \n- Standard corporate onboarding modules but adapted for municipal context\n- Focus on public sector values and procedures\n\n**Stakeholder Input:** \n- HR department requires tracking completion rates\n- IT department needs simple maintenance and updates\n- New employees want self-paced, clear guidance",
+    "acceptance_criteria": [
+      "[x] 🎓 **Pedagogik Framför Allt** - Serves clear educational goals about digitalization strategy",
+      "[x] 🌉 **Policy till Praktik** - Bridges abstract policy concepts to practical implementation",
+      "[x] ⏰ **Respekt för Tid** - Respects busy schedules (≤10 minute learning sessions)",
+      "[x] 🔗 **Helhetssyn** - Shows system connections and holistic thinking",
+      "[x] 🎯 **Intelligens, Inte Infantilisering** - Professional tone and sophisticated approach"
+    ],
+    "user_persona": "Anna",
+    "priority_level": "medium",
+    "time_constraint_minutes": 10,
+    "learning_objectives": [],
+    "gdd_section_reference": "",
+    "github_issue_url": "https://github.com/jhonnyo88/diginativa-game/issues/24",
+    "requested_by": "jhonnyo88",
+    "created_at": "2025-06-15T20:14:30Z"
+  },
+  "acceptance_criteria": [
+    "[x] 🎓 **Pedagogik Framför Allt** - Serves clear educational goals about digitalization strategy",
+    "[x] 🌉 **Policy till Praktik** - Bridges abstract policy concepts to practical implementation",
+    "[x] ⏰ **Respekt för Tid** - Respects busy schedules (≤10 minute learning sessions)",
+    "[x] 🔗 **Helhetssyn** - Shows system connections and holistic thinking",
+    "[x] 🎯 **Intelligens, Inte Infantilisering** - Professional tone and sophisticated approach",
+    "User can a simple onboarding module that introduces new employees to our organization structure and basic processes so that they can become productive faster and feel confident in their new role without requiring extensive manual guidance from HR as expected",
+    "Feature maintains pedagogical value",
+    "Feature respects 10-minute time constraint",
+    "Feature uses professional tone appropriate for Anna persona",
+    "All API endpoints respond within 200ms",
+    "Frontend components are accessible (WCAG AA)",
+    "Feature works on mobile devices",
+    "Code coverage is above 90%",
+    "No critical security vulnerabilities",
+    "Performance score above 90"
+  ],
+  "complexity_assessment": {
+    "overall_complexity": "Very Complex",
+    "effort_points": 10,
+    "technical_complexity": "Medium",
+    "design_complexity": "High",
+    "integration_complexity": "Low",
+    "testing_complexity": "Low",
+    "estimated_duration_hours": 64.0,
+    "estimated_duration_days": 8.0,
+    "risk_factors": [
+      "Technical complexity",
+      "Timeline constraints"
+    ],
+    "confidence_level": 0.7000000000000001,
+    "implementation_notes": "Implementation involves medium technical complexity and high design complexity.",
+    "complexity_breakdown": {
+      "frontend_work": 3,
+      "backend_work": 2,
+      "testing_work": 2,
+      "integration_work": 1
+    },
+    "assessment_timestamp": "2025-06-15T22:26:29.615888",
+    "prediction_method": "traditional_with_ml_insight",
+    "ml_confidence_low": true,
+    "ml_insights": [
+      "Limited historical data for ML prediction"
+    ]
+  },
+  "created_at": "2025-06-15T22:26:29.617971",
+  "created_by": "pm-001"
+}

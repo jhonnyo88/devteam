@@ -296,7 +296,7 @@ class DeveloperAgent(BaseAgent):
         except Exception as e:
             error_msg = f"Developer implementation failed for {story_id}: {str(e)}"
             self.logger.error(error_msg)
-            raise AgentExecutionError(error_msg)
+            raise AgentExecutionError(error_msg, self.agent_id, story_id)
     
     async def _validate_architecture_requirements(self, input_data: Dict[str, Any]) -> None:
         """

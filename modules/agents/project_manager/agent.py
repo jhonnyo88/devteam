@@ -31,6 +31,7 @@ from ...shared.exceptions import (
     DNAComplianceError, BusinessLogicError, ExternalServiceError,
     AgentExecutionError
 )
+from ...shared.event_bus import EventBus
 from .tools.github_integration import GitHubIntegration
 from .tools.story_analyzer import StoryAnalyzer
 from .tools.dna_compliance_checker import DNAComplianceChecker
@@ -38,6 +39,7 @@ from .tools.learning_engine import LearningEngine
 from .tools.swedish_municipal_communicator import SwedishMunicipalCommunicator
 from .tools.team_coordinator import TeamCoordinator
 from .tools.stakeholder_relationship_manager import StakeholderRelationshipManager
+from .tools.dna_story_validator import DNAStoryValidator
 
 
 class ProjectManagerAgent(BaseAgent):
@@ -77,8 +79,12 @@ class ProjectManagerAgent(BaseAgent):
             self.swedish_communicator = SwedishMunicipalCommunicator(config)
             self.team_coordinator = TeamCoordinator(config)
             self.stakeholder_manager = StakeholderRelationshipManager(config)
+            self.dna_story_validator = DNAStoryValidator(config)
             
-            self.logger.info("Project Manager Agent tools initialized successfully")
+            # Initialize EventBus for team coordination
+            self.event_bus = EventBus(config)
+            
+            self.logger.info("Project Manager Agent tools (including EventBus) initialized successfully")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize PM Agent tools: {e}")
@@ -119,6 +125,9 @@ class ProjectManagerAgent(BaseAgent):
             story_id = input_contract.get("story_id")
             self.logger.info(f"Processing feature request for story: {story_id}")
             
+            # Notify team that PM processing has started
+            await self._notify_team_progress("story_analysis_started", {"story_id": story_id})
+            
             # Step 1: Extract and validate feature request data
             feature_data = self._extract_feature_data(input_contract)
             
@@ -148,6 +157,10 @@ class ProjectManagerAgent(BaseAgent):
                 story_breakdown
             )
             
+            # Notify GitHub issue processed
+            await self._notify_team_progress("github_issue_processed", {"story_id": story_id})
+            await self._notify_team_progress("story_breakdown_complete", {"story_id": story_id})
+            
             # Step 5: Estimate complexity and timeline (Enhanced with ML)
             traditional_complexity = await self.story_analyzer.assess_complexity(
                 story_breakdown
@@ -165,6 +178,28 @@ class ProjectManagerAgent(BaseAgent):
                 self.logger.warning(f"ML complexity prediction failed, using traditional: {e}")
                 complexity_assessment = traditional_complexity
             
+            await self._notify_team_progress("complexity_analysis_complete", {"story_id": story_id})
+            
+            # Step 5c: Validate story DNA compliance (NEW)
+            self.logger.info("Validating story DNA compliance")
+            learning_objectives = feature_data.get("learning_objectives", [])
+            dna_validation_result = await self.dna_story_validator.validate_story_dna_compliance(
+                feature_data,
+                story_breakdown,
+                acceptance_criteria,
+                learning_objectives
+            )
+            
+            # Log DNA compliance violations but don't fail - allow for revision workflow
+            if not dna_validation_result.overall_dna_compliant:
+                self.logger.warning(f"Story DNA compliance validation found violations")
+                for violation in dna_validation_result.story_complexity_result.complexity_violations:
+                    self.logger.warning(f"DNA violation: {violation}")
+                for violation in dna_validation_result.learning_effectiveness_result.effectiveness_violations:
+                    self.logger.warning(f"DNA violation: {violation}")
+                for violation in dna_validation_result.communication_quality_result.communication_violations:
+                    self.logger.warning(f"DNA violation: {violation}")
+            
             # Step 6: Create Game Designer handoff contract
             output_contract = self._create_game_designer_contract(
                 story_id,
@@ -172,7 +207,8 @@ class ProjectManagerAgent(BaseAgent):
                 story_breakdown,
                 acceptance_criteria,
                 complexity_assessment,
-                dna_analysis
+                dna_analysis,
+                dna_validation_result
             )
             
             # Step 7: Save story documentation
@@ -193,6 +229,14 @@ class ProjectManagerAgent(BaseAgent):
             except Exception as e:
                 self.logger.warning(f"Team coordination failed, continuing without: {e}")
             
+            await self._notify_team_progress("stakeholder_communication_sent", {"story_id": story_id})
+            
+            # Final completion notification
+            await self._notify_team_progress("pm_processing_complete", {
+                "story_id": story_id,
+                "status": "ready_for_game_designer"
+            })
+            
             self.logger.info(f"Successfully processed story: {story_id}")
             return output_contract
             
@@ -209,6 +253,12 @@ class ProjectManagerAgent(BaseAgent):
             raise
             
         except Exception as e:
+            # Notify team of failure
+            await self._notify_team_progress("pm_processing_failed", {
+                "story_id": story_id,
+                "error": str(e)
+            })
+            
             # Wrap unexpected errors
             self.logger.error(f"Unexpected error processing contract: {e}")
             raise AgentExecutionError(
@@ -327,7 +377,8 @@ class ProjectManagerAgent(BaseAgent):
         story_breakdown: Dict[str, Any],
         acceptance_criteria: List[str],
         complexity_assessment: Dict[str, Any],
-        dna_analysis: Dict[str, Any]
+        dna_analysis: Dict[str, Any],
+        dna_validation_result: Any = None
     ) -> Dict[str, Any]:
         """
         Create output contract for Game Designer handoff.
@@ -361,6 +412,17 @@ class ProjectManagerAgent(BaseAgent):
                     "stateless_backend": True,
                     "separation_of_concerns": True,
                     "simplicity_first": True
+                },
+                "project_manager_dna_validation": {
+                    "overall_dna_compliant": dna_validation_result.overall_dna_compliant if dna_validation_result else True,
+                    "time_respect_compliant": dna_validation_result.time_respect_compliant if dna_validation_result else True,
+                    "pedagogical_value_compliant": dna_validation_result.pedagogical_value_compliant if dna_validation_result else True,
+                    "professional_tone_compliant": dna_validation_result.professional_tone_compliant if dna_validation_result else True,
+                    "policy_to_practice_compliant": dna_validation_result.policy_to_practice_compliant if dna_validation_result else True,
+                    "holistic_thinking_compliant": dna_validation_result.holistic_thinking_compliant if dna_validation_result else True,
+                    "dna_compliance_score": dna_validation_result.dna_compliance_score if dna_validation_result else 5.0,
+                    "validation_timestamp": dna_validation_result.validation_timestamp if dna_validation_result else datetime.now().isoformat(),
+                    "quality_reviewer_metrics": dna_validation_result.quality_reviewer_metrics if dna_validation_result else {}
                 }
             },
             "input_requirements": {
@@ -1033,3 +1095,70 @@ class ProjectManagerAgent(BaseAgent):
         except Exception as e:
             self.logger.error(f"Failed to optimize stakeholder relationships: {e}")
             return {'status': 'error', 'message': str(e)}
+    
+    # EventBus Team Coordination Methods
+    
+    async def _notify_team_progress(self, event_type: str, data: Dict[str, Any]):
+        """Notify team of Project Manager progress via EventBus."""
+        try:
+            await self.event_bus.publish(event_type, {
+                "agent": "project_manager",
+                "story_id": data.get("story_id"),
+                "status": data.get("status"),
+                "timestamp": datetime.now().isoformat(),
+                **data
+            })
+        except Exception as e:
+            self.logger.warning(f"Failed to publish team event {event_type}: {e}")
+
+    async def _listen_for_team_events(self):
+        """Listen for relevant team coordination events."""
+        try:
+            relevant_events = ["project_manager_*", "team_*", "pipeline_*", "story_*"]
+            for event_pattern in relevant_events:
+                await self.event_bus.subscribe(event_pattern, self._handle_team_event)
+        except Exception as e:
+            self.logger.warning(f"Failed to setup team event listeners: {e}")
+
+    async def _handle_team_event(self, event_type: str, data: Dict[str, Any]):
+        """Handle incoming team coordination events."""
+        try:
+            self.logger.info(f"Project Manager received team event: {event_type}")
+            
+            # Handle story-related events
+            if "story_complete" in event_type:
+                await self._handle_story_completion(data)
+            elif "revision_required" in event_type:
+                await self._handle_revision_request(data)
+            elif "approval_decision" in event_type:
+                await self._handle_approval_decision(data)
+            elif "pipeline_error" in event_type:
+                await self._handle_pipeline_error(data)
+        except Exception as e:
+            self.logger.error(f"Error handling team event {event_type}: {e}")
+
+    async def _handle_story_completion(self, data: Dict[str, Any]):
+        """Handle story completion events."""
+        story_id = data.get("story_id")
+        self.logger.info(f"Story {story_id} completed, initiating project owner approval workflow")
+        # Integration with existing feedback processing
+
+    async def _handle_revision_request(self, data: Dict[str, Any]):
+        """Handle revision request events."""
+        story_id = data.get("story_id")
+        self.logger.info(f"Revision requested for story {story_id}, processing feedback")
+        # Integration with existing FeedbackProcessor
+
+    async def _handle_approval_decision(self, data: Dict[str, Any]):
+        """Handle project owner approval decisions."""
+        story_id = data.get("story_id")
+        decision = data.get("decision")
+        self.logger.info(f"Approval decision for story {story_id}: {decision}")
+        # Integration with PriorityQueueManager
+
+    async def _handle_pipeline_error(self, data: Dict[str, Any]):
+        """Handle pipeline error events."""
+        story_id = data.get("story_id")
+        error = data.get("error")
+        self.logger.error(f"Pipeline error for story {story_id}: {error}")
+        # Error handling and recovery logic

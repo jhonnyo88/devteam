@@ -271,6 +271,37 @@ class EventBus:
             "agent_types": {k: len(v) for k, v in self.agent_types.items()}
         }
     
+    async def publish(self, event_type: str, event_data: Dict[str, Any], 
+                     agent_id: Optional[str] = None) -> None:
+        """
+        Publish event for team monitoring and coordination.
+        
+        Args:
+            event_type: Type of event (e.g., 'work_started', 'work_completed', 'error')
+            event_data: Event payload data
+            agent_id: Optional agent ID that triggered the event
+        """
+        try:
+            event = {
+                "event_type": event_type,
+                "event_data": event_data,
+                "agent_id": agent_id,
+                "timestamp": datetime.now().isoformat(),
+                "event_id": f"EVENT-{datetime.now().strftime('%Y%m%d%H%M%S')}-{len(self.completed_work):03d}"
+            }
+            
+            # Log event for monitoring
+            self.logger.info(f"Event published: {event_type} from {agent_id or 'system'}")
+            self.logger.debug(f"Event details: {event}")
+            
+            # In a full implementation, this would publish to message queues,
+            # webhooks, or other monitoring systems
+            # For now, we log for monitoring purposes
+            
+        except Exception as e:
+            self.logger.error(f"Failed to publish event {event_type}: {e}")
+            # Don't raise - event publishing should not break workflows
+    
     # Private methods
     
     async def _enqueue_work(self, work_item: WorkItem) -> None:

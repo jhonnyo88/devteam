@@ -256,7 +256,20 @@ class GameDesignerAgent(BaseAgent):
                     agent_type=self.agent_type
                 )
             
-            # Step 6: Generate asset requirements
+            # Step 6: Generate API endpoint specifications (for Developer)
+            api_endpoints = await self._generate_api_endpoints(
+                game_mechanics,
+                ui_components,
+                interaction_flows
+            )
+            
+            # Step 6b: Generate state management requirements (for Developer)
+            state_management = await self._generate_state_management(
+                game_mechanics,
+                ui_components
+            )
+            
+            # Step 6c: Generate asset requirements
             asset_requirements = await self._generate_asset_requirements(
                 game_mechanics,
                 ui_components
@@ -270,6 +283,8 @@ class GameDesignerAgent(BaseAgent):
                 ui_components,
                 interaction_flows,
                 wireframes,
+                api_endpoints,
+                state_management,
                 asset_requirements,
                 ux_validation,
                 dna_ux_validation
@@ -396,6 +411,132 @@ class GameDesignerAgent(BaseAgent):
         
         return asset_requirements
     
+    async def _generate_api_endpoints(self,
+                                    game_mechanics: Dict[str, Any],
+                                    ui_components: List[Dict[str, Any]],
+                                    interaction_flows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Generate API endpoint specifications for Developer."""
+        api_endpoints = []
+        
+        # Generate API endpoints based on game mechanics
+        for mechanic in game_mechanics.get("mechanics", []):
+            mechanic_name = mechanic.get("name", "unknown")
+            
+            # Progress tracking endpoint
+            api_endpoints.append({
+                "name": f"track_{mechanic_name}_progress",
+                "method": "POST",
+                "endpoint": f"/api/learning/{mechanic_name}/progress",
+                "description": f"Spåra användarens framsteg i {mechanic_name}",
+                "request_model": {
+                    "name": "ProgressTrackingRequest",
+                    "fields": {
+                        "user_id": "string",
+                        "progress_data": "object",
+                        "completion_percentage": "number"
+                    }
+                },
+                "response_model": {
+                    "name": "ProgressTrackingResponse",
+                    "fields": {
+                        "success": "boolean",
+                        "progress_saved": "boolean",
+                        "next_steps": "array"
+                    }
+                },
+                "authentication_required": True,
+                "stateless": True
+            })
+            
+            # Get progress endpoint
+            api_endpoints.append({
+                "name": f"get_{mechanic_name}_progress",
+                "method": "GET",
+                "endpoint": f"/api/learning/{mechanic_name}/progress/{{user_id}}",
+                "description": f"Hämta användarens framsteg i {mechanic_name}",
+                "path_parameters": {
+                    "user_id": "string"
+                },
+                "response_model": {
+                    "name": "ProgressResponse",
+                    "fields": {
+                        "progress_data": "object",
+                        "completion_percentage": "number",
+                        "achievements": "array"
+                    }
+                },
+                "authentication_required": True,
+                "stateless": True
+            })
+        
+        # Assessment endpoints based on assessment opportunities
+        assessment_opportunities = game_mechanics.get("assessment_opportunities", [])
+        for assessment in assessment_opportunities:
+            assessment_type = assessment.get("type", "quiz")
+            
+            api_endpoints.append({
+                "name": f"submit_{assessment_type}_assessment",
+                "method": "POST",
+                "endpoint": f"/api/assessment/{assessment_type}",
+                "description": f"Skicka in {assessment_type} bedömning",
+                "request_model": {
+                    "name": "AssessmentSubmissionRequest",
+                    "fields": {
+                        "user_id": "string",
+                        "assessment_data": "object",
+                        "answers": "array"
+                    }
+                },
+                "response_model": {
+                    "name": "AssessmentSubmissionResponse",
+                    "fields": {
+                        "score": "number",
+                        "feedback": "object",
+                        "passed": "boolean"
+                    }
+                },
+                "authentication_required": True,
+                "stateless": True
+            })
+        
+        return api_endpoints
+    
+    async def _generate_state_management(self,
+                                       game_mechanics: Dict[str, Any],
+                                       ui_components: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Generate state management requirements for Developer."""
+        return {
+            "state_structure": {
+                "user_progress": {
+                    "current_module": "string",
+                    "completion_percentage": "number",
+                    "achievements": "array",
+                    "learning_objectives_met": "array"
+                },
+                "session_state": {
+                    "current_step": "number",
+                    "user_inputs": "object",
+                    "temporary_data": "object"
+                },
+                "ui_state": {
+                    "loading": "boolean",
+                    "error_message": "string|null",
+                    "current_view": "string"
+                }
+            },
+            "state_management_approach": "react_context_with_reducers",
+            "persistence": {
+                "local_storage": ["user_progress", "session_state"],
+                "api_sync": ["user_progress", "achievements"],
+                "temporary_only": ["ui_state", "temporary_data"]
+            },
+            "state_validation": {
+                "required": True,
+                "schema_validation": True,
+                "error_handling": "graceful_degradation"
+            }
+        }
+    
     def _create_developer_contract(self,
                                  story_id: str,
                                  story_data: Dict[str, Any],
@@ -403,6 +544,8 @@ class GameDesignerAgent(BaseAgent):
                                  ui_components: List[Dict[str, Any]],
                                  interaction_flows: List[Dict[str, Any]],
                                  wireframes: Dict[str, Any],
+                                 api_endpoints: List[Dict[str, Any]],
+                                 state_management: Dict[str, Any],
                                  asset_requirements: List[Dict[str, Any]],
                                  ux_validation: Dict[str, Any],
                                  dna_ux_validation) -> Dict[str, Any]:
@@ -448,6 +591,8 @@ class GameDesignerAgent(BaseAgent):
                     "ui_components": ui_components,
                     "interaction_flows": interaction_flows,
                     "wireframes": wireframes,
+                    "api_endpoints": api_endpoints,
+                    "state_management": state_management,
                     "asset_requirements": asset_requirements,
                     "ux_validation": ux_validation,
                     "story_context": story_data
@@ -466,6 +611,20 @@ class GameDesignerAgent(BaseAgent):
                     f"docs/implementation/{story_id}_implementation.md"
                 ],
                 "deliverable_data": {
+                    # Actual data for quality gate validation
+                    "game_mechanics": game_mechanics,
+                    "ui_components": ui_components,
+                    "interaction_flows": interaction_flows,
+                    "wireframes": wireframes,
+                    "ux_validation": ux_validation,
+                    "performance_considerations": {
+                        "lighthouse_target": 90,  # DNA principles require >90
+                        "load_time_target": 2000,  # 2 seconds max (DNA time respect)
+                        "api_response_target": 200,  # 200ms max per architecture principles
+                        "bundle_size_impact": "minimal",  # Simplicity first principle
+                        "mobile_performance_optimized": True  # Accessibility requirement
+                    },
+                    # Template data for Developer agent
                     "component_implementations": "List[ComponentImplementation]",
                     "api_implementations": "List[APIEndpoint]",
                     "game_mechanics_implementation": "GameMechanicsCode",

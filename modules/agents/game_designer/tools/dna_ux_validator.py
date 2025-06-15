@@ -358,22 +358,35 @@ class DNAUXValidator:
         effectiveness to ensure pedagogical value is maximized.
         """
         try:
-            # Analyze learning objectives coverage
+            # Analyze learning objectives coverage (enhanced)
             story_learning_objectives = story_data.get("learning_objectives", [])
-            game_learning_objectives = game_mechanics.get("learning_objectives_addressed", [])
             
-            objectives_coverage = {}
-            for objective in story_learning_objectives:
-                objective_covered = any(
-                    objective.lower() in game_obj.lower() 
-                    for game_obj in game_learning_objectives
-                )
-                objectives_coverage[objective] = objective_covered
+            # Check enhanced coverage data first
+            if "learning_objectives_coverage" in game_mechanics:
+                objectives_coverage = game_mechanics["learning_objectives_coverage"]
+                coverage_percentage = sum(objectives_coverage.values()) / len(objectives_coverage) if objectives_coverage else 0.0
+            else:
+                # Fallback to traditional matching
+                game_learning_objectives = game_mechanics.get("learning_objectives_addressed", [])
+                
+                objectives_coverage = {}
+                for objective in story_learning_objectives:
+                    objective_covered = any(
+                        objective.lower() in game_obj.lower() 
+                        for game_obj in game_learning_objectives
+                    )
+                    objectives_coverage[objective] = objective_covered
+                
+                coverage_percentage = sum(objectives_coverage.values()) / len(story_learning_objectives) if story_learning_objectives else 0.0
             
-            coverage_percentage = sum(objectives_coverage.values()) / len(story_learning_objectives) if story_learning_objectives else 0.0
-            
-            # Count assessment opportunities
+            # Count assessment opportunities (enhanced to check both sources)
             assessment_count = 0
+            
+            # Check game_mechanics for assessment_opportunities (enhanced data)
+            if "assessment_opportunities" in game_mechanics:
+                assessment_count += len(game_mechanics["assessment_opportunities"])
+            
+            # Also check interaction flows as fallback
             for flow in interaction_flows:
                 flow_actions = flow.get("user_actions", [])
                 for action in flow_actions:
@@ -381,27 +394,40 @@ class DNAUXValidator:
                           for keyword in ["test", "quiz", "validation", "check", "assess", "evaluate"]):
                         assessment_count += 1
             
-            # Count engagement elements
+            # Count engagement elements (enhanced to check both sources)
             engagement_count = 0
+            
+            # Check game_mechanics for engagement_elements (enhanced data)
+            if "engagement_elements" in game_mechanics:
+                engagement_count += len(game_mechanics["engagement_elements"])
+            
+            # Also check mechanics as fallback
             mechanics_list = game_mechanics.get("mechanics", [])
             for mechanic in mechanics_list:
                 if mechanic.get("engagement_type") in ["interactive", "gamified", "collaborative"]:
                     engagement_count += 1
             
-            # Check flow progression logic
+            # Check flow progression logic (enhanced to use learning_flow_progression)
             flow_progression_logical = True
-            for flow in interaction_flows:
-                steps = flow.get("user_actions", [])
-                if len(steps) < 2:  # Need at least start and end
-                    flow_progression_logical = False
-                    break
-                
-                # Check for logical learning progression (introduction → practice → assessment)
-                has_introduction = any("intro" in step.get("description", "").lower() for step in steps)
-                has_practice = any("practice" in step.get("description", "").lower() for step in steps)
-                
-                if not (has_introduction or has_practice):
-                    flow_progression_logical = False
+            
+            # Check enhanced flow progression data first
+            if "learning_flow_progression" in game_mechanics:
+                flow_data = game_mechanics["learning_flow_progression"]
+                flow_progression_logical = flow_data.get("flow_quality") == "logical_and_coherent"
+            else:
+                # Fallback to analyzing interaction flows
+                for flow in interaction_flows:
+                    steps = flow.get("user_actions", [])
+                    if len(steps) < 2:  # Need at least start and end
+                        flow_progression_logical = False
+                        break
+                    
+                    # Check for logical learning progression (introduction → practice → assessment)
+                    has_introduction = any("intro" in step.get("description", "").lower() for step in steps)
+                    has_practice = any("practice" in step.get("description", "").lower() for step in steps)
+                    
+                    if not (has_introduction or has_practice):
+                        flow_progression_logical = False
             
             # Calculate pedagogical effectiveness score (1-5 scale)
             effectiveness_factors = {

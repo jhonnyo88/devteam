@@ -90,7 +90,7 @@
               "description": "Appropriate for public sector professionals"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "architecture_compliance": {
           "type": "object",
@@ -118,7 +118,7 @@
               "description": "Choose simplest solution that works"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         },
         "enhanced_dna_validation": {
           "type": "object",
@@ -162,6 +162,64 @@
             "learning_flow_quality",
             "professional_tone_consistency",
             "validation_timestamp"
+          ],
+          "additionalProperties": true
+        },
+        "project_manager_dna_validation": {
+          "type": "object",
+          "description": "Enhanced DNA validation results from Project Manager DNA Story Validator",
+          "properties": {
+            "overall_dna_compliant": {
+              "type": "boolean",
+              "description": "Overall DNA compliance status"
+            },
+            "time_respect_compliant": {
+              "type": "boolean", 
+              "description": "Time respect principle compliance"
+            },
+            "pedagogical_value_compliant": {
+              "type": "boolean",
+              "description": "Pedagogical value principle compliance"
+            },
+            "professional_tone_compliant": {
+              "type": "boolean",
+              "description": "Professional tone principle compliance"
+            },
+            "policy_to_practice_compliant": {
+              "type": "boolean",
+              "description": "Policy to practice principle compliance"
+            },
+            "holistic_thinking_compliant": {
+              "type": "boolean",
+              "description": "Holistic thinking principle compliance"
+            },
+            "dna_compliance_score": {
+              "type": "number",
+              "minimum": 1.0,
+              "maximum": 5.0,
+              "description": "DNA compliance score (1-5 scale)"
+            },
+            "validation_timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp of DNA validation"
+            },
+            "quality_reviewer_metrics": {
+              "type": "object",
+              "description": "Metrics for Quality Reviewer integration",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "overall_dna_compliant",
+            "time_respect_compliant", 
+            "pedagogical_value_compliant",
+            "professional_tone_compliant",
+            "policy_to_practice_compliant",
+            "holistic_thinking_compliant",
+            "dna_compliance_score",
+            "validation_timestamp",
+            "quality_reviewer_metrics"
           ],
           "additionalProperties": false
         }
@@ -262,6 +320,11 @@
         "type": "string"
       },
       "description": "Specific conditions that must be met for successful handoff"
+    },
+    "team_coordination": {
+      "type": "object",
+      "description": "Team coordination data from TeamCoordinator tool",
+      "additionalProperties": true
     }
   },
   "additionalProperties": false

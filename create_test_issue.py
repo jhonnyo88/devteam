@@ -1,4 +1,17 @@
----
+#!/usr/bin/env python3
+"""
+Create GitHub Issue for DigiNativa End-to-End Test
+
+This script creates the exact GitHub issue described in the end-to-end test plan
+for testing the Digital Medarbetarhandbok feature.
+"""
+
+import json
+import os
+from pathlib import Path
+
+# GitHub issue content from the test plan
+GITHUB_ISSUE_CONTENT = """---
 name: DigiNativa Feature Request
 about: Request a new pedagogical feature for Swedish municipalities
 title: '[FEATURE] Digital Medarbetarhandbok med Interaktiv Utbildning'
@@ -95,3 +108,65 @@ Effektiv introduktionsutbildning är kritisk för att nya medarbetare snabbt ska
 - **Testing:** Jest + Cypress + Playwright
 - **Accessibility:** WCAG 2.1 AA compliance
 - **Performance:** <200ms API response, >90 Lighthouse score
+"""
+
+def create_local_test_file():
+    """Create local test file for the GitHub issue."""
+    test_file_path = Path("test_feature_request.md")
+    
+    with open(test_file_path, 'w', encoding='utf-8') as f:
+        f.write(GITHUB_ISSUE_CONTENT)
+    
+    print(f"✅ Test feature request created: {test_file_path}")
+    print("📋 Use this content to create a GitHub issue in your repository")
+    print()
+    print("🚀 Instructions:")
+    print("1. Go to your GitHub repository")
+    print("2. Click 'Issues' → 'New Issue'") 
+    print("3. Copy content from test_feature_request.md")
+    print("4. Add labels: feature-request, priority-high, pedagogical-content, municipal-training, e2e-test")
+    print("5. Submit the issue")
+    print("6. Run: python run_e2e_test.py")
+
+def create_mock_github_response():
+    """Create mock GitHub API response for testing."""
+    mock_response = {
+        "number": 1001,
+        "title": "[FEATURE] Digital Medarbetarhandbok med Interaktiv Utbildning",
+        "body": GITHUB_ISSUE_CONTENT,
+        "state": "open",
+        "labels": [
+            {"name": "feature-request"},
+            {"name": "priority-high"},
+            {"name": "pedagogical-content"},
+            {"name": "municipal-training"},
+            {"name": "e2e-test"}
+        ],
+        "created_at": "2024-01-15T10:00:00Z",
+        "html_url": "https://github.com/test-repo/issues/1001",
+        "user": {
+            "login": "test-user"
+        }
+    }
+    
+    mock_file_path = Path("test_github_issue_mock.json")
+    with open(mock_file_path, 'w', encoding='utf-8') as f:
+        json.dump(mock_response, f, indent=2, ensure_ascii=False)
+    
+    print(f"✅ Mock GitHub response created: {mock_file_path}")
+    print("📋 This can be used for testing GitHub integration without real API calls")
+
+if __name__ == "__main__":
+    print("🎯 DigiNativa E2E Test - GitHub Issue Creator")
+    print("=" * 50)
+    print()
+    
+    create_local_test_file()
+    create_mock_github_response()
+    
+    print()
+    print("📊 Test Assets Created:")
+    print("  📄 test_feature_request.md - Issue content for GitHub")
+    print("  📄 test_github_issue_mock.json - Mock API response for testing")
+    print()
+    print("🚀 Next step: Run 'python run_e2e_test.py' to test the pipeline!")

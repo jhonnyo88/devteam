@@ -57,6 +57,7 @@ class APIBuildResult:
     success: bool
     endpoint_name: str
     generated_files: List[str]
+    generated_code: Dict[str, str]  # Contains 'endpoint', 'models', 'tests', 'schema'
     performance_score: int
     security_score: int
     test_coverage_percent: float
@@ -152,7 +153,7 @@ class APIBuilder:
             
             for api_endpoint in api_endpoints:
                 # Parse specification
-                api_spec = self._parse_api_specification(api_endpoint, state_management)
+                api_spec = await self._parse_api_specification(api_endpoint, state_management)
                 
                 # Validate stateless design
                 await self._validate_stateless_design(api_spec)
@@ -171,6 +172,7 @@ class APIBuilder:
                             "tests": f"endpoints/{story_id}/tests/test_{api_spec.name}.py",
                             "schemas": f"endpoints/{story_id}/schemas/{api_spec.name}Schema.json"
                         },
+                        "code": build_result.generated_code,  # Add the generated code
                         "implementation": build_result,
                         "functional_test_passed": build_result.performance_score > 80,
                         "performance_test_passed": build_result.estimated_response_time_ms < 200,
@@ -329,6 +331,12 @@ class APIBuilder:
                     f"endpoints/{story_id}/tests/test_{api_spec.name}.py",
                     f"endpoints/{story_id}/schemas/{api_spec.name}Schema.json"
                 ],
+                generated_code={
+                    "endpoint": endpoint_code,
+                    "models": models_code,
+                    "tests": tests_code,
+                    "schema": schema_json
+                },
                 performance_score=performance_score,
                 security_score=security_score,
                 test_coverage_percent=100.0,  # All generated endpoints have full test coverage
@@ -342,6 +350,7 @@ class APIBuilder:
                 success=False,
                 endpoint_name=api_spec.name,
                 generated_files=[],
+                generated_code={},
                 performance_score=0,
                 security_score=0,
                 test_coverage_percent=0.0,
