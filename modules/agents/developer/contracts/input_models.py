@@ -12,7 +12,7 @@ CRITICAL VALIDATION:
 - Game Designer output format validation
 """
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, model_validator
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 from enum import Enum
@@ -81,10 +81,10 @@ class APIEndpoint(BaseModel):
             raise ValueError("API path must start with '/'")
         return v
     
-    @root_validator
-    def validate_stateless_design(cls, values):
+    @model_validator(mode='after')
+    def validate_stateless_design(self):
         """Validate endpoint follows stateless design principles."""
-        business_logic = values.get('business_logic', {})
+        business_logic = self.business_logic or {}
         
         # Check for stateful violations
         stateful_keywords = ['session', 'global_state', 'server_cache']
@@ -92,7 +92,7 @@ class APIEndpoint(BaseModel):
             if keyword in str(business_logic).lower():
                 raise ValueError(f"Endpoint violates stateless design: contains '{keyword}'")
         
-        return values
+        return self
 
 
 class InteractionFlow(BaseModel):
@@ -260,11 +260,11 @@ class DeveloperInputContract(BaseModel):
             raise ValueError("Story ID must start with 'STORY-'")
         return v
     
-    @root_validator
-    def validate_complete_contract(cls, values):
+    @model_validator(mode='after')
+    def validate_complete_contract(self):
         """Validate complete contract integrity."""
         # Ensure DNA compliance is properly validated
-        dna_compliance = values.get('dna_compliance')
+        dna_compliance = self.dna_compliance
         if dna_compliance:
             # Verify both design and architecture compliance
             design_valid = all(dna_compliance.design_principles_validation.values())
@@ -274,7 +274,7 @@ class DeveloperInputContract(BaseModel):
                 raise ValueError("Contract DNA compliance validation failed")
         
         # Validate input requirements contain proper Game Designer outputs
-        input_reqs = values.get('input_requirements')
+        input_reqs = self.input_requirements
         if input_reqs:
             required_data = input_reqs.required_data
             
@@ -301,7 +301,7 @@ class DeveloperInputContract(BaseModel):
             if 'state_management' in required_data:
                 StateManagement(**required_data['state_management'])
         
-        return values
+        return self
     
     class Config:
         """Pydantic configuration."""

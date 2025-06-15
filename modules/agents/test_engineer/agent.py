@@ -30,6 +30,7 @@ from pathlib import Path
 # Import our foundation
 from ...shared.base_agent import BaseAgent, AgentExecutionResult
 from ...shared.exceptions import AgentExecutionError, DNAComplianceError, QualityGateError
+from ...shared.event_bus import EventBus
 
 # Import specialized tools
 from .tools.test_generator import TestGenerator
@@ -37,6 +38,7 @@ from .tools.coverage_analyzer import CoverageAnalyzer
 from .tools.performance_tester import PerformanceTester
 from .tools.security_scanner import SecurityScanner
 from .tools.dna_test_validator import DNATestValidator
+from .tools.ai_test_optimizer import AITestOptimizer
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -72,12 +74,16 @@ class TestEngineerAgent(BaseAgent):
         """
         super().__init__("te-001", "test_engineer", config)
         
+        # Initialize EventBus for team coordination
+        self.event_bus = EventBus(config)
+        
         # Initialize specialized tools
         self.test_generator = TestGenerator(config)
         self.coverage_analyzer = CoverageAnalyzer(config)
         self.performance_tester = PerformanceTester(config)
         self.security_scanner = SecurityScanner(config)
         self.dna_test_validator = DNATestValidator(config)
+        self.ai_test_optimizer = AITestOptimizer(config)
         
         # Test Engineer specific configuration
         self.test_output_path = self.config.get("test_output_path", "tests")
@@ -99,6 +105,31 @@ class TestEngineerAgent(BaseAgent):
         }
         
         self.logger.info("TestEngineerAgent initialized successfully")
+    
+    async def _notify_team_progress(self, event_type: str, data: Dict[str, Any]):
+        """Notify team of progress via EventBus."""
+        await self.event_bus.publish(event_type, {
+            "agent": self.agent_type,
+            "story_id": data.get("story_id"),
+            "status": data.get("status"),
+            "timestamp": datetime.now().isoformat(),
+            **data
+        })
+
+    async def _listen_for_team_events(self):
+        """Listen for relevant team events."""
+        relevant_events = ["test_engineer_*", "team_*", "pipeline_*", "testing_*"]
+        for event_pattern in relevant_events:
+            await self.event_bus.subscribe(event_pattern, self._handle_team_event)
+
+    async def _handle_team_event(self, event_type: str, data: Dict[str, Any]):
+        """Handle incoming team coordination events."""
+        self.logger.info(f"Test Engineer received team event: {event_type}")
+        # Test Engineer specific event handling logic
+        if event_type.startswith("implementation_"):
+            self.logger.info(f"Developer implementation event: {event_type}")
+        elif event_type.startswith("testing_"):
+            self.logger.info(f"Testing coordination event: {event_type}")
     
     async def process_contract(self, input_contract: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -128,6 +159,9 @@ class TestEngineerAgent(BaseAgent):
             story_id = input_contract.get("story_id")
             self.logger.info(f"Starting comprehensive testing for story: {story_id}")
             
+            # Notify team of testing start
+            await self._notify_team_progress("testing_started", {"story_id": story_id})
+            
             # Step 1: Extract and validate implementation data
             input_data = input_contract.get("input_requirements", {}).get("required_data", {})
             
@@ -144,6 +178,20 @@ class TestEngineerAgent(BaseAgent):
                 component_implementations, api_implementations
             )
             
+            # Step 2.5: AI-driven test optimization and strategy
+            self.logger.info("Performing AI test optimization analysis")
+            ai_optimization_result = await self.ai_test_optimizer.optimize_test_strategy(
+                component_implementations,
+                api_implementations,
+                input_data,
+                existing_test_suite
+            )
+            await self._notify_team_progress("ai_optimization_complete", {
+                "story_id": story_id,
+                "optimization_score": ai_optimization_result.overall_optimization_score,
+                "time_savings": ai_optimization_result.estimated_time_savings_minutes
+            })
+            
             # Step 3: Generate integration tests
             self.logger.info("Generating integration tests")
             integration_test_suite = await self.test_generator.generate_integration_tests(
@@ -151,6 +199,7 @@ class TestEngineerAgent(BaseAgent):
                 api_implementations,
                 story_id
             )
+            await self._notify_team_progress("integration_tests_generated", {"story_id": story_id})
             
             # Step 4: Generate end-to-end tests
             self.logger.info("Generating end-to-end tests")
@@ -160,6 +209,7 @@ class TestEngineerAgent(BaseAgent):
                 implementation_docs.get("user_flows", []),
                 story_id
             )
+            await self._notify_team_progress("e2e_tests_generated", {"story_id": story_id})
             
             # Step 5: Execute performance testing
             self.logger.info("Running performance tests")
@@ -168,6 +218,7 @@ class TestEngineerAgent(BaseAgent):
                 component_implementations,
                 story_id
             )
+            await self._notify_team_progress("performance_tests_complete", {"story_id": story_id})
             
             # Step 6: Execute security scanning
             self.logger.info("Running security vulnerability scan")
@@ -176,6 +227,7 @@ class TestEngineerAgent(BaseAgent):
                 component_implementations,
                 story_id
             )
+            await self._notify_team_progress("security_scan_complete", {"story_id": story_id})
             
             # Step 7: Analyze test coverage
             self.logger.info("Analyzing test coverage")
@@ -187,6 +239,7 @@ class TestEngineerAgent(BaseAgent):
                 api_implementations,
                 story_id
             )
+            await self._notify_team_progress("coverage_analysis_complete", {"story_id": story_id})
             
             # Step 8: Validate all quality gates
             await self._validate_test_quality_gates(
@@ -206,6 +259,11 @@ class TestEngineerAgent(BaseAgent):
                 coverage_report,
                 input_data
             )
+            await self._notify_team_progress("dna_validation_complete", {
+                "story_id": story_id,
+                "dna_compliant": dna_validation_result.overall_dna_compliant,
+                "dna_score": dna_validation_result.dna_compliance_score
+            })
             
             # Step 10: Generate test automation configuration
             automation_config = await self._generate_automation_configuration(
@@ -225,8 +283,12 @@ class TestEngineerAgent(BaseAgent):
                 security_scan_results,
                 coverage_report,
                 automation_config,
-                dna_validation_result
+                dna_validation_result,
+                ai_optimization_result
             )
+            
+            # Notify team of testing completion
+            await self._notify_team_progress("testing_complete", {"story_id": story_id})
             
             self.logger.info(f"Testing completed successfully for story: {story_id}")
             return output_contract
@@ -422,7 +484,8 @@ class TestEngineerAgent(BaseAgent):
         security_scan_results: Dict[str, Any],
         coverage_report: Dict[str, Any],
         automation_config: Dict[str, Any],
-        dna_validation_result: Any = None
+        dna_validation_result: Any = None,
+        ai_optimization_result: Any = None
     ) -> Dict[str, Any]:
         """
         Create output contract for QA Tester.
@@ -478,6 +541,15 @@ class TestEngineerAgent(BaseAgent):
                     "coverage_report": coverage_report,
                     "automation_config": automation_config,
                     "dna_validation_results": dna_validation_result.quality_reviewer_metrics if dna_validation_result else {},
+                    "ai_optimization_results": {
+                        "optimization_score": ai_optimization_result.overall_optimization_score if ai_optimization_result else 0.0,
+                        "time_savings_minutes": ai_optimization_result.estimated_time_savings_minutes if ai_optimization_result else 0.0,
+                        "quality_improvement_score": ai_optimization_result.quality_improvement_score if ai_optimization_result else 0.0,
+                        "failure_predictions": len(ai_optimization_result.failure_predictions) if ai_optimization_result else 0,
+                        "test_priorities": len(ai_optimization_result.test_priorities) if ai_optimization_result else 0,
+                        "edge_case_predictions": len(ai_optimization_result.edge_case_predictions) if ai_optimization_result else 0,
+                        "municipal_insights": ai_optimization_result.municipal_optimization_insights if ai_optimization_result else {}
+                    },
                     "original_implementation": {
                         "component_implementations": input_contract.get("input_requirements", {}).get("required_data", {}).get("component_implementations", []),
                         "api_implementations": input_contract.get("input_requirements", {}).get("required_data", {}).get("api_implementations", [])

@@ -35,6 +35,7 @@ from pathlib import Path
 # Import our foundation
 from ...shared.base_agent import BaseAgent, AgentExecutionResult
 from ...shared.exceptions import AgentExecutionError, DNAComplianceError, QualityGateError
+from ...shared.event_bus import EventBus
 
 # Import specialized tools
 from .tools.code_generator import CodeGenerator
@@ -42,6 +43,7 @@ from .tools.api_builder import APIBuilder
 from .tools.git_operations import GitOperations
 from .tools.component_builder import ComponentBuilder
 from .tools.architecture_validator import ArchitectureValidator
+from .tools.dna_code_validator import DNACodeValidator
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -77,12 +79,16 @@ class DeveloperAgent(BaseAgent):
         """
         super().__init__("dev-001", "developer", config)
         
+        # Initialize EventBus for team coordination
+        self.event_bus = EventBus(config)
+        
         # Initialize specialized tools
         self.code_generator = CodeGenerator(config)
         self.api_builder = APIBuilder(config)
         self.git_operations = GitOperations(config)
         self.component_builder = ComponentBuilder(config)
         self.architecture_validator = ArchitectureValidator(config)
+        self.dna_code_validator = DNACodeValidator(config)
         
         # Developer-specific configuration
         self.frontend_path = self.config.get("frontend_path", "frontend")
@@ -100,6 +106,34 @@ class DeveloperAgent(BaseAgent):
         }
         
         self.logger.info("DeveloperAgent initialized successfully")
+    
+    async def _notify_team_progress(self, event_type: str, data: Dict[str, Any]):
+        """Notify team of implementation progress via EventBus."""
+        await self.event_bus.publish(event_type, {
+            "agent": self.agent_type,
+            "story_id": data.get("story_id"),
+            "status": data.get("status"),
+            "timestamp": datetime.now().isoformat(),
+            **data
+        })
+
+    async def _listen_for_team_events(self):
+        """Listen for relevant team coordination events."""
+        relevant_events = [f"{self.agent_type}_*", "team_*", "implementation_*", "code_*"]
+        for event_pattern in relevant_events:
+            await self.event_bus.subscribe(event_pattern, self._handle_team_event)
+
+    async def _handle_team_event(self, event_type: str, data: Dict[str, Any]):
+        """Handle incoming team coordination events."""
+        self.logger.info(f"Developer received team event: {event_type}")
+        
+        # Implementation-specific event handling
+        if "code_review_feedback" in event_type:
+            self.logger.info("Received code review feedback from Quality Reviewer")
+            # Could implement code revision logic here
+        elif "design_updated" in event_type:
+            self.logger.info("Received design update notification")
+            # Could implement design change handling here
     
     async def process_contract(self, input_contract: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -131,6 +165,9 @@ class DeveloperAgent(BaseAgent):
             story_id = input_contract.get("story_id")
             self.logger.info(f"Starting implementation for story: {story_id}")
             
+            # Notify team that implementation has started
+            await self._notify_team_progress("implementation_started", {"story_id": story_id})
+            
             # Step 1: Extract and validate input data
             input_data = input_contract.get("input_requirements", {}).get("required_data", {})
             
@@ -151,19 +188,29 @@ class DeveloperAgent(BaseAgent):
             
             # Step 4: Generate React components
             self.logger.info("Generating React components")
+            await self._notify_team_progress("components_generation_started", {"story_id": story_id})
             component_implementations = await self.component_builder.build_components(
                 ui_components, 
                 interaction_flows,
                 story_id
             )
+            await self._notify_team_progress("components_implemented", {
+                "story_id": story_id, 
+                "component_count": len(component_implementations)
+            })
             
             # Step 5: Generate FastAPI endpoints
             self.logger.info("Generating FastAPI endpoints")
+            await self._notify_team_progress("apis_generation_started", {"story_id": story_id})
             api_implementations = await self.api_builder.build_apis(
                 api_endpoints,
                 state_management,
                 story_id
             )
+            await self._notify_team_progress("apis_created", {
+                "story_id": story_id, 
+                "api_count": len(api_implementations)
+            })
             
             # Step 6: Generate unit tests
             self.logger.info("Generating unit tests")
@@ -175,12 +222,24 @@ class DeveloperAgent(BaseAgent):
             
             # Step 7: Validate DNA compliance in generated code
             self.logger.info("Validating DNA compliance in generated code")
-            await self._validate_code_dna_compliance(
+            await self._notify_team_progress("dna_validation_started", {"story_id": story_id})
+            dna_validation_result = await self.dna_code_validator.validate_code_dna_compliance(
                 component_implementations,
                 api_implementations,
                 test_suite,
                 game_mechanics
             )
+            
+            # Check if DNA compliance passed
+            if not dna_validation_result.overall_dna_compliant:
+                error_msg = f"DNA compliance validation failed: {'; '.join(dna_validation_result.violations)}"
+                self.logger.error(error_msg)
+                raise DNAComplianceError(error_msg)
+            
+            await self._notify_team_progress("dna_validation_complete", {
+                "story_id": story_id,
+                "dna_compliance_score": dna_validation_result.dna_compliance_score
+            })
             
             # Step 8: Validate implementation quality
             await self._validate_implementation_quality(
@@ -191,6 +250,7 @@ class DeveloperAgent(BaseAgent):
             
             # Step 9: Commit implementation to feature branch
             commit_message = f"Implement {story_id}: {game_mechanics.get('title', 'Feature implementation')}"
+            await self._notify_team_progress("git_operations_started", {"story_id": story_id})
             commit_hash = await self.git_operations.commit_implementation(
                 story_id,
                 commit_message,
@@ -198,6 +258,10 @@ class DeveloperAgent(BaseAgent):
                 api_implementations,
                 test_suite
             )
+            await self._notify_team_progress("git_operations_complete", {
+                "story_id": story_id, 
+                "commit_hash": commit_hash
+            })
             
             # Step 10: Generate implementation documentation
             implementation_docs = await self._generate_implementation_docs(
@@ -216,8 +280,15 @@ class DeveloperAgent(BaseAgent):
                 api_implementations,
                 test_suite,
                 implementation_docs,
-                commit_hash
+                commit_hash,
+                dna_validation_result
             )
+            
+            # Notify team that implementation is complete
+            await self._notify_team_progress("implementation_complete", {
+                "story_id": story_id,
+                "status": "ready_for_testing"
+            })
             
             self.logger.info(f"Implementation completed successfully for story: {story_id}")
             return output_contract
@@ -685,7 +756,8 @@ class DeveloperAgent(BaseAgent):
         api_implementations: List[Dict[str, Any]],
         test_suite: Dict[str, Any],
         implementation_docs: Dict[str, Any],
-        commit_hash: str
+        commit_hash: str,
+        dna_validation_result: Any
     ) -> Dict[str, Any]:
         """
         Create output contract for Test Engineer.
@@ -698,6 +770,7 @@ class DeveloperAgent(BaseAgent):
             test_suite: Generated tests
             implementation_docs: Implementation documentation
             commit_hash: Git commit hash
+            dna_validation_result: DNA validation results
             
         Returns:
             Output contract for Test Engineer
@@ -708,7 +781,24 @@ class DeveloperAgent(BaseAgent):
             "story_id": story_id,
             "source_agent": "developer",
             "target_agent": "test_engineer",
-            "dna_compliance": input_contract.get("dna_compliance"),
+            "dna_compliance": {
+                **input_contract.get("dna_compliance", {}),
+                "developer_dna_validation": {
+                    "overall_dna_compliant": dna_validation_result.overall_dna_compliant,
+                    "time_respect_compliant": dna_validation_result.time_respect_compliant,
+                    "pedagogical_value_compliant": dna_validation_result.pedagogical_value_compliant,
+                    "professional_tone_compliant": dna_validation_result.professional_tone_compliant,
+                    "api_first_compliant": dna_validation_result.api_first_compliant,
+                    "stateless_backend_compliant": dna_validation_result.stateless_backend_compliant,
+                    "separation_concerns_compliant": dna_validation_result.separation_concerns_compliant,
+                    "simplicity_first_compliant": dna_validation_result.simplicity_first_compliant,
+                    "dna_compliance_score": dna_validation_result.dna_compliance_score,
+                    "validation_timestamp": dna_validation_result.validation_timestamp,
+                    "violations": dna_validation_result.violations,
+                    "recommendations": dna_validation_result.recommendations,
+                    "quality_reviewer_metrics": dna_validation_result.quality_reviewer_metrics
+                }
+            },
             
             "input_requirements": {
                 "required_files": [

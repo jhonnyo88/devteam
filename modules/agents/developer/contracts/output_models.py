@@ -12,7 +12,7 @@ CRITICAL VALIDATION:
 - Test Engineer input requirements
 """
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, model_validator
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 from enum import Enum
@@ -301,16 +301,16 @@ class DeveloperOutputContract(BaseModel):
         
         return v
     
-    @root_validator
-    def validate_complete_contract(cls, values):
+    @model_validator(mode='after')
+    def validate_complete_contract(self):
         """Validate complete contract integrity."""
         # Validate DNA compliance is preserved from input
-        dna_compliance = values.get('dna_compliance')
+        dna_compliance = self.dna_compliance
         if not dna_compliance:
             raise ValueError("DNA compliance must be preserved from input contract")
         
         # Validate input requirements for Test Engineer
-        input_reqs = values.get('input_requirements')
+        input_reqs = self.input_requirements
         if input_reqs:
             required_data = input_reqs.required_data
             
@@ -332,7 +332,7 @@ class DeveloperOutputContract(BaseModel):
             if 'implementation_docs' in required_data:
                 ImplementationDocs(**required_data['implementation_docs'])
         
-        return values
+        return self
     
     class Config:
         """Pydantic configuration."""

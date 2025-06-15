@@ -27,6 +27,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ...shared.base_agent import BaseAgent, AgentExecutionResult
+from ...shared.event_bus import EventBus
 from ...shared.exceptions import (
     DNAComplianceError, BusinessLogicError, ExternalServiceError,
     AgentExecutionError
@@ -57,6 +58,9 @@ class GameDesignerAgent(BaseAgent):
         """Initialize Game Designer agent."""
         super().__init__(agent_id, "game_designer", config)
         
+        # Initialize EventBus for team coordination
+        self.event_bus = EventBus(config)
+        
         # Initialize design tools
         try:
             self.component_mapper = ComponentMapper()
@@ -65,11 +69,67 @@ class GameDesignerAgent(BaseAgent):
             self.pedagogical_helper = PedagogicalDesignHelper()
             self.dna_ux_validator = DNAUXValidator(config=self.config.get("dna_config", {}))
             
-            self.logger.info("Game Designer agent tools (including DNA UX validator) initialized successfully")
+            self.logger.info("Game Designer agent tools (including DNA UX validator and EventBus) initialized successfully")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize Game Designer tools: {e}")
             raise AgentExecutionError(f"Tool initialization failed: {e}", agent_id)
+    
+    async def _notify_team_progress(self, event_type: str, data: Dict[str, Any]):
+        """Notify team of progress via EventBus."""
+        try:
+            await self.event_bus.publish(event_type, {
+                "agent": "game_designer",
+                "story_id": data.get("story_id"),
+                "status": data.get("status"),
+                "timestamp": datetime.now().isoformat(),
+                **data
+            })
+        except Exception as e:
+            self.logger.warning(f"Failed to publish team event {event_type}: {e}")
+
+    async def _listen_for_team_events(self):
+        """Listen for relevant team events."""
+        relevant_events = ["game_designer_*", "team_*", "ux_*", "design_*"]
+        try:
+            for event_pattern in relevant_events:
+                await self.event_bus.subscribe(event_pattern, self._handle_team_event)
+        except Exception as e:
+            self.logger.warning(f"Failed to subscribe to team events: {e}")
+
+    async def _handle_team_event(self, event_type: str, data: Dict[str, Any]):
+        """Handle incoming team coordination events."""
+        try:
+            self.logger.info(f"Game Designer received team event: {event_type}")
+            
+            # Handle UX-specific events
+            if "design_feedback" in event_type:
+                await self._handle_design_feedback(data)
+            elif "revision_request" in event_type:
+                await self._handle_revision_request(data)
+            elif "accessibility_update" in event_type:
+                await self._handle_accessibility_update(data)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to handle team event {event_type}: {e}")
+
+    async def _handle_design_feedback(self, data: Dict[str, Any]):
+        """Handle design feedback from other agents."""
+        story_id = data.get("story_id")
+        feedback = data.get("feedback", [])
+        self.logger.info(f"Received design feedback for story {story_id}: {len(feedback)} items")
+
+    async def _handle_revision_request(self, data: Dict[str, Any]):
+        """Handle revision requests from Quality Reviewer."""
+        story_id = data.get("story_id")
+        revision_requirements = data.get("revision_requirements", {})
+        self.logger.info(f"Received revision request for story {story_id}")
+
+    async def _handle_accessibility_update(self, data: Dict[str, Any]):
+        """Handle accessibility requirement updates."""
+        story_id = data.get("story_id")
+        accessibility_updates = data.get("accessibility_requirements", [])
+        self.logger.info(f"Received accessibility updates for story {story_id}")
     
     async def process_contract(self, input_contract: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -93,6 +153,13 @@ class GameDesignerAgent(BaseAgent):
             story_id = input_contract.get("story_id")
             self.logger.info(f"Processing design request for story: {story_id}")
             
+            # Notify team that UX design has started
+            await self._notify_team_progress("ux_design_started", {
+                "story_id": story_id,
+                "status": "started",
+                "message": "Game Designer starting UX specification and game design"
+            })
+            
             # Step 1: Extract and validate story breakdown
             story_data = self._extract_story_data(input_contract)
             
@@ -102,12 +169,30 @@ class GameDesignerAgent(BaseAgent):
                 story_data
             )
             
+            # Notify team about game mechanics completion
+            await self._notify_team_progress("game_mechanics_created", {
+                "story_id": story_id,
+                "status": "milestone_completed",
+                "milestone": "pedagogical_game_mechanics",
+                "mechanics_count": len(game_mechanics.get("mechanics", [])),
+                "pedagogical_score": game_mechanics.get("pedagogical_effectiveness_score", 0)
+            })
+            
             # Step 3: Generate UI component specifications
             self.logger.debug("Generating UI component specifications")
             ui_components = await self.component_mapper.map_story_to_components(
                 story_data,
                 game_mechanics
             )
+            
+            # Notify team about component mapping completion
+            await self._notify_team_progress("components_mapped", {
+                "story_id": story_id,
+                "status": "milestone_completed",
+                "milestone": "ui_component_mapping",
+                "components_count": len(ui_components),
+                "library_compliance": all(comp.get("library_compliant", False) for comp in ui_components)
+            })
             
             # Step 4: Create interaction flows and wireframes
             self.logger.debug("Creating interaction flows and wireframes")
@@ -120,6 +205,15 @@ class GameDesignerAgent(BaseAgent):
                 ui_components,
                 interaction_flows
             )
+            
+            # Notify team about wireframes completion
+            await self._notify_team_progress("wireframes_complete", {
+                "story_id": story_id,
+                "status": "milestone_completed",
+                "milestone": "wireframes_and_flows",
+                "interaction_flows_count": len(interaction_flows),
+                "wireframes_created": len(wireframes.get("wireframes", []))
+            })
             
             # Step 5: Validate UX design against DNA principles (original validation)
             self.logger.debug("Validating UX design against DNA principles")
@@ -190,6 +284,26 @@ class GameDesignerAgent(BaseAgent):
                 wireframes,
                 asset_requirements
             )
+            
+            # Notify team that UX design is complete and ready for Developer
+            await self._notify_team_progress("ux_design_complete", {
+                "story_id": story_id,
+                "status": "completed",
+                "message": "Game Designer UX specification complete - ready for Developer implementation",
+                "deliverables": {
+                    "components_count": len(ui_components),
+                    "game_mechanics_count": len(game_mechanics.get("mechanics", [])),
+                    "interaction_flows_count": len(interaction_flows),
+                    "wireframes_count": len(wireframes.get("wireframes", [])),
+                    "asset_requirements_count": len(asset_requirements)
+                },
+                "quality_metrics": {
+                    "dna_compliance_score": dna_ux_validation.dna_compliance_score,
+                    "overall_dna_compliant": dna_ux_validation.overall_dna_compliant,
+                    "pedagogical_effectiveness": game_mechanics.get("pedagogical_effectiveness_score", 0)
+                },
+                "next_agent": "developer"
+            })
             
             self.logger.info(f"Successfully processed design for story: {story_id}")
             return output_contract

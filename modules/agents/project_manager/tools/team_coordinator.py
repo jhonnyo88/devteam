@@ -102,16 +102,7 @@ class TeamCoordinator:
         self.logger = logging.getLogger(f"{__name__}.TeamCoordinator")
         self.config = config or {}
         
-        # Initialize EventBus connection
-        self.event_bus = None
-        self._initialize_event_bus()
-        
-        # Performance tracking
-        self.agent_metrics = {}
-        self.team_performance_history = []
-        self.performance_alerts = []
-        
-        # Team coordination settings
+        # Team coordination settings (define before EventBus init)
         self.agent_sequence = [
             "project_manager",
             "game_designer", 
@@ -120,6 +111,15 @@ class TeamCoordinator:
             "qa_tester",
             "quality_reviewer"
         ]
+        
+        # Performance tracking
+        self.agent_metrics = {}
+        self.team_performance_history = []
+        self.performance_alerts = []
+        
+        # Initialize EventBus connection (after agent_sequence is defined)
+        self.event_bus = None
+        self._initialize_event_bus()
         
         # Performance thresholds
         self.performance_thresholds = {
@@ -135,13 +135,6 @@ class TeamCoordinator:
         """Initialize EventBus connection for team coordination."""
         try:
             self.event_bus = EventBus()
-            
-            # Register PM agent with EventBus
-            self.event_bus.register_agent("project_manager", ["game_designer"])
-            
-            # Subscribe to team coordination events
-            self._subscribe_to_team_events()
-            
             self.logger.info("EventBus connection established for PM Agent")
             
         except Exception as e:
@@ -153,20 +146,9 @@ class TeamCoordinator:
         if not self.event_bus:
             return
             
-        # Subscribe to work completion events from all agents
-        for agent_type in self.agent_sequence[1:]:  # Skip project_manager
-            self.event_bus.subscribe(
-                f"{agent_type}.work.completed",
-                self._handle_agent_work_completed
-            )
-            self.event_bus.subscribe(
-                f"{agent_type}.work.failed", 
-                self._handle_agent_work_failed
-            )
-            self.event_bus.subscribe(
-                f"{agent_type}.status.changed",
-                self._handle_agent_status_changed
-            )
+        # Note: EventBus API uses register_agent/delegate_to_agent pattern
+        # Team coordination happens through work delegation rather than event subscription
+        # This is handled in coordinate_team_workflow method using delegate_to_agent
     
     async def coordinate_team_workflow(
         self,
@@ -324,9 +306,8 @@ class TeamCoordinator:
             # Set up approval monitoring
             monitoring_setup = await self._setup_approval_monitoring(story_id, approval_request)
             
-            # Notify team about approval request
-            if self.event_bus:
-                await self._notify_team_approval_requested(story_id, approval_request)
+            # Note: Team notification handled through work delegation pattern
+            # EventBus API uses register_agent/delegate_to_agent for coordination
             
             return {
                 'status': 'approval_workflow_automated',
@@ -466,25 +447,24 @@ class TeamCoordinator:
         try:
             next_agent = workflow_context['next_agent']
             
-            # Create work item for next agent
-            work_item_obj = WorkItem(
-                work_id=f"work-{workflow_context['story_id']}-{int(datetime.now().timestamp())}",
-                story_id=workflow_context['story_id'],
-                source_agent="project_manager",
-                target_agent=next_agent,
-                work_type="story_processing",
-                work_data=work_item,
-                priority="normal",
-                metadata={'workflow_context': workflow_context}
-            )
+            # Create work contract for next agent
+            work_contract = {
+                "contract_version": "1.0",
+                "story_id": workflow_context['story_id'],
+                "source_agent": "project_manager",
+                "target_agent": next_agent,
+                "input_requirements": {"required_data": work_item},
+                "dna_compliance": work_item.get("dna_compliance", {}),
+                "workflow_context": workflow_context
+            }
             
-            # Submit to EventBus
-            success = await self.event_bus.submit_work(work_item_obj, target_agent=next_agent)
+            # Delegate via EventBus using correct API
+            work_id = await self.event_bus.delegate_to_agent(next_agent, work_contract)
             
             return {
-                'status': 'delegated' if success else 'delegation_failed',
+                'status': 'delegated' if work_id else 'delegation_failed',
                 'target_agent': next_agent,
-                'work_id': work_item_obj.work_id
+                'work_id': work_id
             }
             
         except Exception as e:
@@ -625,18 +605,9 @@ class TeamCoordinator:
     
     async def _notify_team_approval_requested(self, story_id: str, approval_request: Dict[str, Any]) -> None:
         """Notify team about approval request via EventBus."""
-        if self.event_bus:
-            try:
-                await self.event_bus.publish_event(
-                    TeamEventType.APPROVAL_REQUESTED.value,
-                    {
-                        'story_id': story_id,
-                        'approval_request': approval_request,
-                        'timestamp': datetime.now().isoformat()
-                    }
-                )
-            except Exception as e:
-                self.logger.error(f"Failed to notify team about approval request: {e}")
+        # Note: EventBus API uses register_agent/delegate_to_agent pattern
+        # Team notifications handled through work delegation workflow
+        self.logger.info(f"Approval workflow automated for {story_id}")
     
     def _calculate_delivery_timeline(self, story_id: str) -> Dict[str, Any]:
         """Calculate delivery timeline based on current team performance."""

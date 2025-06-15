@@ -26,6 +26,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from ...shared.base_agent import BaseAgent
+from ...shared.event_bus import EventBus
 from ...shared.exceptions import (
     BusinessLogicError, 
     DNAComplianceError,
@@ -35,6 +36,7 @@ from .tools.quality_scorer import QualityScorer
 from .tools.deployment_validator import DeploymentValidator
 from .tools.final_approver import FinalApprover
 from .tools.client_communicator import ClientCommunicator
+from .tools.dna_final_validator import DNAFinalValidator
 
 
 class QualityReviewerAgent(BaseAgent):
@@ -61,6 +63,10 @@ class QualityReviewerAgent(BaseAgent):
         self.deployment_validator = DeploymentValidator()
         self.final_approver = FinalApprover()
         self.client_communicator = ClientCommunicator()
+        self.dna_final_validator = DNAFinalValidator()
+        
+        # Initialize EventBus for team coordination
+        self.event_bus = EventBus(config)
         
         # Quality thresholds from DNA principles
         self.quality_thresholds = {
@@ -74,6 +80,47 @@ class QualityReviewerAgent(BaseAgent):
         }
         
         self.logger.info(f"Quality Reviewer Agent initialized with thresholds: {self.quality_thresholds}")
+    
+    async def _notify_team_progress(self, event_type: str, data: Dict[str, Any]):
+        """Notify team of Quality Reviewer progress via EventBus."""
+        try:
+            await self.event_bus.publish(event_type, {
+                "agent": "quality_reviewer",
+                "story_id": data.get("story_id"),
+                "status": data.get("status"),
+                "timestamp": datetime.now().isoformat(),
+                **data
+            })
+        except Exception as e:
+            self.logger.warning(f"Failed to publish team event {event_type}: {e}")
+    
+    async def _listen_for_team_events(self):
+        """Listen for relevant team coordination events."""
+        try:
+            relevant_events = ["quality_reviewer_*", "team_*", "pipeline_*", "final_review_*"]
+            for event_pattern in relevant_events:
+                await self.event_bus.subscribe(event_pattern, self._handle_team_event)
+        except Exception as e:
+            self.logger.warning(f"Failed to setup team event listeners: {e}")
+    
+    async def _handle_team_event(self, event_type: str, data: Dict[str, Any]):
+        """Handle incoming team coordination events."""
+        try:
+            self.logger.info(f"Quality Reviewer received team event: {event_type}")
+            
+            # Handle specific events relevant to Quality Reviewer
+            if event_type.startswith("revision_feedback_"):
+                # Handle feedback from previous revisions
+                story_id = data.get("story_id")
+                if story_id:
+                    self.logger.info(f"Received revision feedback for story {story_id}")
+            
+            elif event_type.startswith("deployment_"):
+                # Handle deployment-related events
+                self.logger.info(f"Deployment event received: {event_type}")
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to handle team event {event_type}: {e}")
     
     async def process_contract(self, input_contract: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -89,7 +136,14 @@ class QualityReviewerAgent(BaseAgent):
             Output contract for deployment or rejection
         """
         try:
-            self.logger.info(f"Starting quality review for story: {input_contract.get('story_id')}")
+            story_id = input_contract.get('story_id')
+            self.logger.info(f"Starting quality review for story: {story_id}")
+            
+            # Notify team that final review has started
+            await self._notify_team_progress("final_review_started", {
+                "story_id": story_id,
+                "status": "final_quality_review_initiated"
+            })
             
             # Extract QA data from contract
             qa_data = self._extract_qa_data(input_contract)
@@ -97,19 +151,42 @@ class QualityReviewerAgent(BaseAgent):
             # Perform comprehensive quality analysis
             quality_analysis = await self._perform_quality_analysis(qa_data)
             
+            # Notify team of quality assessment completion
+            await self._notify_team_progress("quality_assessment_complete", {
+                "story_id": story_id,
+                "overall_score": quality_analysis.get("overall_score", 0),
+                "status": "quality_metrics_calculated"
+            })
+            
             # Validate deployment readiness
             deployment_readiness = await self._validate_deployment_readiness(qa_data, quality_analysis)
+            
+            # Perform final DNA validation
+            dna_final_result = await self.dna_final_validator.validate_final_dna_compliance(
+                story_data={"story_id": story_id},
+                ux_validation=qa_data.get("ux_validation_results", {}),
+                persona_testing=qa_data.get("persona_testing_results", {}),
+                quality_predictions=qa_data.get("quality_intelligence_predictions", {}),
+                all_agent_dna_results=input_contract.get("dna_compliance", {})
+            )
             
             # Make final approval decision
             approval_decision = await self._make_approval_decision(quality_analysis, deployment_readiness)
             
             # Handle client communication based on approval decision
             client_communication = await self._handle_client_communication(
-                input_contract.get("story_id"), 
+                story_id, 
                 quality_analysis, 
                 deployment_readiness, 
                 approval_decision
             )
+            
+            # Notify team of client communication completion
+            await self._notify_team_progress("client_communication_prepared", {
+                "story_id": story_id,
+                "communication_type": client_communication.get("communication_type", "unknown"),
+                "status": "client_communication_ready"
+            })
             
             # Create output contract
             output_contract = await self._create_output_contract(
@@ -117,13 +194,35 @@ class QualityReviewerAgent(BaseAgent):
                 quality_analysis, 
                 deployment_readiness, 
                 approval_decision,
-                client_communication
+                client_communication,
+                dna_final_result
             )
             
-            # Log decision
+            # Log decision and notify team
             decision = approval_decision["approved"]
             score = quality_analysis["overall_score"]
             self.logger.info(f"Quality review completed: {'APPROVED' if decision else 'REJECTED'} (Score: {score})")
+            
+            # Notify team of final decision
+            if decision:
+                await self._notify_team_progress("feature_approved", {
+                    "story_id": story_id,
+                    "quality_score": score,
+                    "dna_compliance_score": dna_final_result.dna_compliance_score,
+                    "status": "approved_for_deployment"
+                })
+                await self._notify_team_progress("deployment_ready", {
+                    "story_id": story_id,
+                    "deployment_environment": "production",
+                    "status": "ready_for_deployment"
+                })
+            else:
+                await self._notify_team_progress("revision_required", {
+                    "story_id": story_id,
+                    "quality_score": score,
+                    "blocking_issues": approval_decision.get("blocking_issues", []),
+                    "status": "needs_revision"
+                })
             
             return output_contract
             
@@ -432,7 +531,7 @@ class QualityReviewerAgent(BaseAgent):
     
     async def _create_output_contract(self, input_contract: Dict[str, Any], quality_analysis: Dict[str, Any], 
                                     deployment_readiness: Dict[str, Any], approval_decision: Dict[str, Any],
-                                    client_communication: Dict[str, Any]) -> Dict[str, Any]:
+                                    client_communication: Dict[str, Any], dna_final_result) -> Dict[str, Any]:
         """
         Create output contract for deployment or rejection.
         
@@ -441,6 +540,8 @@ class QualityReviewerAgent(BaseAgent):
             quality_analysis: Quality analysis results
             deployment_readiness: Deployment readiness validation
             approval_decision: Final approval decision
+            client_communication: Client communication data
+            dna_final_result: Final DNA validation result
             
         Returns:
             Output contract for next stage
@@ -466,7 +567,16 @@ class QualityReviewerAgent(BaseAgent):
                     ),
                     "architecture_compliance": self._convert_architecture_compliance_to_boolean(
                         quality_analysis["dna_compliance"]["architecture_principles"]
-                    )
+                    ),
+                    "final_dna_validation": {
+                        "overall_dna_compliant": dna_final_result.overall_dna_compliant,
+                        "final_user_journey_compliant": dna_final_result.final_user_journey_compliant,
+                        "client_communication_compliant": dna_final_result.client_communication_compliant,
+                        "deployment_ready": dna_final_result.deployment_ready,
+                        "dna_compliance_score": dna_final_result.dna_compliance_score,
+                        "compliance_level": dna_final_result.compliance_level.value,
+                        "validation_timestamp": dna_final_result.validation_timestamp
+                    }
                 },
                 "input_requirements": {
                     "required_files": [

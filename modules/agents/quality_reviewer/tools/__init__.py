@@ -13,10 +13,12 @@ from .quality_scorer import QualityScorer
 from .deployment_validator import DeploymentValidator
 from .final_approver import FinalApprover
 from .client_communicator import ClientCommunicator
+from .dna_final_validator import DNAFinalValidator
 
 __all__ = [
     "QualityScorer",
     "DeploymentValidator", 
     "FinalApprover",
-    "ClientCommunicator"
+    "ClientCommunicator",
+    "DNAFinalValidator"
 ]

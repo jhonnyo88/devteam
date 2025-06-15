@@ -101,7 +101,7 @@ class CodeGenerator:
         self.code_standards = {
             "typescript_strict": True,
             "eslint_config": "airbnb-typescript",
-            "prettier_config": {"semi": true, "singleQuote": true, "trailingComma": "es5"},
+            "prettier_config": {"semi": True, "singleQuote": True, "trailingComma": "es5"},
             "test_framework": "jest",
             "ui_library": "shadcn/ui",
             "game_assets": "kenney-ui",
@@ -453,7 +453,7 @@ import {{ {spec.name}Props }} from './types/{spec.name}Types';
 export const {spec.name}: React.FC<{spec.name}Props> = (props) => {{
   return (
     <div className="digitativa-{spec.name.lower()}" role="{spec.accessibility_requirements.get('role', 'region')}">
-      {/* Component implementation will be generated based on spec */}
+      {{/* Component implementation will be generated based on spec */}}
       <h2>{{props.title || '{spec.name}'}}</h2>
     </div>
   );

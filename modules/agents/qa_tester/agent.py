@@ -34,6 +34,7 @@ from ...shared.base_agent import BaseAgent, AgentExecutionResult
 from ...shared.exceptions import (
     QualityGateError, DNAComplianceError, AgentExecutionError
 )
+from ...shared.event_bus import EventBus
 from .tools.persona_simulator import PersonaSimulator
 from .tools.accessibility_checker import AccessibilityChecker
 from .tools.user_flow_validator import UserFlowValidator
@@ -42,6 +43,7 @@ from .tools.municipal_training_tester import MunicipalTrainingTester
 from .tools.exploratory_tester import ExploratoryTester
 from .tools.uat_orchestrator import UATOrchestrator
 from .tools.quality_intelligence_engine import QualityIntelligenceEngine
+from .tools.dna_quality_validator import DNAQualityValidator
 
 
 # Setup logging for this module
@@ -85,7 +87,21 @@ class QATesterAgent(BaseAgent):
             # AI-powered Quality Intelligence (Phase 1 Enhancement)
             self.quality_intelligence_engine = QualityIntelligenceEngine(config=self.config.get("ai_config", {}))
             
-            self.logger.info("QA Tester tools (core + enhanced + AI) initialized successfully")
+            # DNA Quality Validator (Enhanced DNA Validation)
+            self.dna_quality_validator = DNAQualityValidator(config=self.config.get("dna_config", {}))
+            
+            # EventBus for team coordination
+            self.event_bus = EventBus(config)
+            
+            # Initialize EventBus team coordination
+            try:
+                # Subscribe to team events (run in background)
+                import asyncio
+                asyncio.create_task(self._listen_for_team_events())
+            except Exception as e:
+                self.logger.warning(f"EventBus team coordination setup deferred: {e}")
+            
+            self.logger.info("QA Tester tools (core + enhanced + AI + DNA + EventBus) initialized successfully")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize QA Tester tools: {e}")
@@ -251,23 +267,57 @@ class QATesterAgent(BaseAgent):
                 }
             )
             
-            # Step 6: Validate DNA compliance specific to QA (Enhanced with AI)
-            self.logger.info("Validating comprehensive DNA compliance for QA aspects")
-            dna_compliance_results = await self._validate_enhanced_qa_dna_compliance(
-                persona_results=persona_results,
-                accessibility_results=accessibility_results,
-                content_quality=content_quality_results,
-                performance_results=performance_results,
-                municipal_compliance=municipal_compliance_results,
-                exploratory_results=exploratory_results,
-                uat_results=uat_results,
-                ai_predictions={
-                    "quality_prediction": ai_quality_prediction,
-                    "test_optimization": ai_test_optimization,
-                    "anna_prediction": ai_anna_prediction,
-                    "quality_insights": ai_quality_insights
-                }
+            # EventBus: Publish AI Quality Intelligence predictions
+            await self._notify_team_progress("quality_intelligence_prediction", {
+                "story_id": story_id,
+                "ai_quality_prediction": ai_quality_prediction,
+                "confidence_level": ai_quality_prediction.confidence_level,
+                "predicted_score": ai_quality_prediction.predicted_quality_score,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            # EventBus: Publish Anna satisfaction prediction
+            await self._notify_team_progress("anna_satisfaction_predicted", {
+                "story_id": story_id,
+                "anna_prediction": ai_anna_prediction,
+                "satisfaction_score": ai_anna_prediction.predicted_satisfaction_score,
+                "completion_time": ai_anna_prediction.predicted_completion_time_minutes,
+                "confidence": ai_anna_prediction.confidence_score
+            })
+            
+            # Step 6: Validate DNA compliance with Enhanced DNA Quality Validator
+            self.logger.info("Validating comprehensive DNA compliance with AI-enhanced quality validator")
+            
+            # Consolidate QA results for DNA validation
+            consolidated_qa_results = {
+                "anna_persona_testing": persona_results,
+                "accessibility_compliance": accessibility_results,
+                "user_flow_validation": flow_validation_results,
+                "content_quality_assessment": content_quality_results,
+                "performance_validation_results": performance_results,
+                "municipal_compliance_results": municipal_compliance_results,
+                "exploratory_testing_results": exploratory_results,
+                "user_acceptance_testing_results": uat_results
+            }
+            
+            # AI predictions for DNA validation
+            ai_predictions_for_dna = {
+                "quality_prediction": ai_quality_prediction,
+                "test_optimization": ai_test_optimization,
+                "anna_prediction": ai_anna_prediction,
+                "quality_insights": ai_quality_insights
+            }
+            
+            # Enhanced DNA validation with AI integration
+            dna_validation_result = await self.dna_quality_validator.validate_dna_compliance(
+                story_id=story_id,
+                qa_results=consolidated_qa_results,
+                ai_predictions=ai_predictions_for_dna,
+                implementation_data=implementation_data
             )
+            
+            # Convert to format compatible with existing code
+            dna_compliance_results = self.dna_quality_validator.to_dict(dna_validation_result)
             
             # Step 7: Generate comprehensive QA report (Enhanced with AI)
             qa_report = await self._generate_enhanced_qa_report(
@@ -375,6 +425,21 @@ class QATesterAgent(BaseAgent):
                     "production_readiness_assessment_complete"
                 ]
             }
+            
+            # EventBus: Publish QA completion with comprehensive results  
+            await self._notify_team_progress("qa_testing_completed", {
+                "story_id": story_id,
+                "qa_summary": {
+                    "overall_quality_score": qa_report.get("quality_metrics", {}).get("overall_score", 0),
+                    "anna_satisfaction": persona_results.get("satisfaction_score", 0),
+                    "accessibility_score": accessibility_results.get("compliance_percentage", 0),
+                    "ai_quality_prediction": ai_quality_prediction.predicted_quality_score,
+                    "ai_anna_prediction": ai_anna_prediction.predicted_satisfaction_score
+                },
+                "quality_gates_passed": output_contract.get("quality_gates", []),
+                "handoff_ready": True,
+                "target_agent": "quality_reviewer"
+            })
             
             self.logger.info(f"QA testing completed successfully for story: {story_id}")
             return output_contract
@@ -1372,3 +1437,200 @@ class QATesterAgent(BaseAgent):
                 story_id, persona_results, accessibility_results,
                 flow_validation, content_quality, dna_compliance
             )
+    
+    # EventBus Team Coordination Methods
+    
+    async def _notify_team_progress(self, event_type: str, data: Dict[str, Any]):
+        """
+        Notify team about QA progress and quality intelligence insights.
+        
+        Args:
+            event_type: Type of quality event to publish
+            data: Event data to share with team
+        """
+        try:
+            await self.event_bus.publish_event(
+                event_type=event_type,
+                source_agent="qa_tester",
+                data=data
+            )
+            self.logger.info(f"Published QA event: {event_type}")
+        except Exception as e:
+            self.logger.error(f"Failed to publish QA event {event_type}: {e}")
+    
+    async def _listen_for_team_events(self):
+        """
+        Listen for team events that affect QA testing strategy.
+        """
+        try:
+            # Subscribe to relevant events
+            await self.event_bus.subscribe("test_completion", self._handle_team_event)
+            await self.event_bus.subscribe("implementation_change", self._handle_team_event)
+            await self.event_bus.subscribe("quality_concern", self._handle_team_event)
+            await self.event_bus.subscribe("accessibility_update", self._handle_team_event)
+            
+            self.logger.info("QA Tester subscribed to team events")
+        except Exception as e:
+            self.logger.error(f"Failed to subscribe to team events: {e}")
+    
+    async def _handle_team_event(self, event_type: str, data: Dict[str, Any]):
+        """
+        Handle incoming team events for QA coordination.
+        
+        Args:
+            event_type: Type of event received
+            data: Event data from other agents
+        """
+        try:
+            if event_type == "test_completion":
+                # Test Engineer completed testing - prepare for QA
+                story_id = data.get("story_id")
+                test_results = data.get("test_results", {})
+                
+                # Analyze test results for QA strategy adjustment
+                await self._adjust_qa_strategy_from_tests(story_id, test_results)
+                
+            elif event_type == "implementation_change":
+                # Developer made changes that affect QA
+                story_id = data.get("story_id")
+                changes = data.get("changes", {})
+                
+                # Update QA focus areas based on changes
+                await self._update_qa_focus_areas(story_id, changes)
+                
+            elif event_type == "quality_concern":
+                # Quality Reviewer identified issues
+                story_id = data.get("story_id")
+                concerns = data.get("concerns", [])
+                
+                # Enhance QA testing for identified concerns
+                await self._enhance_qa_for_concerns(story_id, concerns)
+                
+            elif event_type == "accessibility_update":
+                # Accessibility requirements updated
+                story_id = data.get("story_id")
+                accessibility_updates = data.get("accessibility_updates", {})
+                
+                # Update accessibility testing criteria
+                await self._update_accessibility_criteria(story_id, accessibility_updates)
+            
+            self.logger.info(f"Handled team event: {event_type} for story {data.get('story_id', 'unknown')}")
+            
+        except Exception as e:
+            self.logger.error(f"Error handling team event {event_type}: {e}")
+    
+    async def _adjust_qa_strategy_from_tests(self, story_id: str, test_results: Dict[str, Any]):
+        """
+        Adjust QA strategy based on Test Engineer results.
+        
+        Args:
+            story_id: Story identifier
+            test_results: Test results from Test Engineer
+        """
+        try:
+            # Analyze test coverage and performance
+            coverage = test_results.get("coverage_report", {})
+            performance = test_results.get("performance_results", {})
+            
+            # Adjust QA focus based on test gaps
+            qa_adjustments = {
+                "enhanced_persona_testing": coverage.get("total_coverage", 100) < 95,
+                "deep_performance_testing": performance.get("lighthouse_score", 100) < 90,
+                "extended_accessibility_testing": test_results.get("security_scan_results", {}).get("vulnerabilities", [])
+            }
+            
+            # Publish QA strategy adjustment
+            await self._notify_team_progress("qa_strategy_adjusted", {
+                "story_id": story_id,
+                "adjustments": qa_adjustments,
+                "reasoning": "Based on Test Engineer results"
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error adjusting QA strategy for {story_id}: {e}")
+    
+    async def _update_qa_focus_areas(self, story_id: str, changes: Dict[str, Any]):
+        """
+        Update QA focus areas based on implementation changes.
+        
+        Args:
+            story_id: Story identifier  
+            changes: Implementation changes from Developer
+        """
+        try:
+            # Analyze changes impact on QA
+            ui_changes = changes.get("ui_components", [])
+            api_changes = changes.get("api_endpoints", [])
+            
+            focus_updates = {
+                "ui_regression_testing": len(ui_changes) > 0,
+                "api_integration_testing": len(api_changes) > 0,
+                "accessibility_revalidation": any("accessibility" in str(change) for change in ui_changes)
+            }
+            
+            # Publish focus area updates
+            await self._notify_team_progress("qa_focus_updated", {
+                "story_id": story_id,
+                "focus_areas": focus_updates,
+                "trigger": "Implementation changes detected"
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error updating QA focus areas for {story_id}: {e}")
+    
+    async def _enhance_qa_for_concerns(self, story_id: str, concerns: List[str]):
+        """
+        Enhance QA testing for Quality Reviewer concerns.
+        
+        Args:
+            story_id: Story identifier
+            concerns: Quality concerns identified
+        """
+        try:
+            # Map concerns to enhanced QA testing
+            enhanced_testing = {
+                "additional_persona_scenarios": "user_experience" in str(concerns),
+                "extended_accessibility_audit": "accessibility" in str(concerns),
+                "performance_stress_testing": "performance" in str(concerns),
+                "security_deep_scan": "security" in str(concerns)
+            }
+            
+            # Publish enhanced testing plan
+            await self._notify_team_progress("qa_enhancement_planned", {
+                "story_id": story_id,
+                "enhanced_testing": enhanced_testing,
+                "concerns_addressed": concerns
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error enhancing QA for concerns in {story_id}: {e}")
+    
+    async def _update_accessibility_criteria(self, story_id: str, accessibility_updates: Dict[str, Any]):
+        """
+        Update accessibility testing criteria.
+        
+        Args:
+            story_id: Story identifier
+            accessibility_updates: Updated accessibility requirements
+        """
+        try:
+            # Update internal accessibility criteria
+            new_criteria = accessibility_updates.get("criteria", {})
+            compliance_level = accessibility_updates.get("compliance_level", "AA")
+            
+            # Merge with existing criteria
+            updated_criteria = {
+                **self.quality_criteria.get("accessibility", {}),
+                **new_criteria,
+                "compliance_level": compliance_level
+            }
+            
+            # Publish criteria update
+            await self._notify_team_progress("accessibility_criteria_updated", {
+                "story_id": story_id,
+                "updated_criteria": updated_criteria,
+                "compliance_level": compliance_level
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error updating accessibility criteria for {story_id}: {e}")
