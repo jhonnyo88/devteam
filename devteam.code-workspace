@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../diginative"
+		},
+		{
+			"path": "../../diginative_runtime_engine"
 		}
 	],
 	"settings": {}

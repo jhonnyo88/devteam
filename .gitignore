@@ -121,4 +121,23 @@ models/*.safetensors
 
 # Local development overrides
 local_config.py
-dev_settings.pydiginativa-game/
+dev_settings.py
+
+# Separate repository - don't include as submodule
+diginativa-game/
+
+# Temporary files and development artifacts
+*_test_output.json
+*_demo_test.py
+*_temp.py
+production_pipeline_*.log
+e2e_test.log
+test_*.md
+test_*.json
+*_template.yml
+*_TEMPLATE_*.yml
+enhanced-*.yml
+deploy-template.*
+ROLLBACK_*.md
+TEAM_PIPELINE_*.md
+template-*.md
