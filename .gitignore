@@ -121,4 +121,4 @@ models/*.safetensors
 
 # Local development overrides
 local_config.py
-dev_settings.py
+dev_settings.pydiginativa-game/
